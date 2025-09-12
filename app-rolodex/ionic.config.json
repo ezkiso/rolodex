@@ -1,0 +1,7 @@
+{
+  "name": "app-rolodex",
+  "integrations": {
+    "capacitor": {}
+  },
+  "type": "angular-standalone"
+}

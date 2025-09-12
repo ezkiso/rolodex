@@ -1,0 +1,77 @@
+				Requerimientos Rolodex
+1. Introducción
+Este documento consolida los requerimientos funcionales y no funcionales para el sistema Rolodex, una aplicación de gestión de contactos con funcionalidades avanzadas de organización y seguimiento.
+2. Requerimientos Funcionales
+RF01: Gestión de Bloques de Información
+* Ingreso: Permitir al usuario crear nuevos bloques de información de contactos.
+* Edición: Permitir la modificación de bloques existentes durante y después de su creación.
+* Eliminación: Posibilidad de eliminar secciones completas o bloques individuales.
+* Búsqueda: Función para buscar contactos mediante nombre u otros criterios.
+* Fecha de Ingreso: Cada bloque debe registrar la fecha de ingreso del contacto para control cronológico.
+RF02: Sección de Enlaces de Contacto
+* Añadir enlaces: Los bloques deben incluir sección para enlaces (correo, RRSS, teléfono).
+* Validación de Enlaces: Verificación automática del formato correcto de cada enlace ingresado.
+RF03: Exportación de Datos
+* Formatos de exportación: Capacidad para exportar contactos como archivo JPG o PDF.
+* Compatibilidad: Los archivos exportados deben ser fácilmente compartibles.
+RF04: Historial de Cambios
+* Seguimiento de cambios: Módulo de recuperación para bloques eliminados.
+* Restauración: Capacidad de restaurar versiones anteriores o contactos eliminados.
+RF05: Nuevas Funcionalidades
+* Diseño Flotante del Formulario:
+   * Ubicación: Burbuja/icono flotante en esquina superior derecha
+   * Comportamiento:
+      * Mostrar/ocultar formulario al hacer clic
+      * Animación suave de aparición/desaparición
+      * Icono de "+" cuando esté cerrado, icono de "×" cuando esté abierto
+* Campos Adicionales para Notas y Reuniones:
+   * Nuevos campos:
+typescript
+notes: {
+  text: string;
+  meetingDate: string; // formato ISO
+  priority: 'low' | 'medium' | 'high';
+  tags: string[]; // Ej: ['Trabajo', 'Importante']
+}
+* Interfaz visual:
+   * Editor de texto enriquecido para notas
+   * Selector de fecha/hora para reuniones
+   * Chips para etiquetas
+* Actualización del Modelo de Datos:
+typescript
+// En contact.model.ts
+export interface ContactNote {
+  text: string;
+  date: string;
+  created: string;
+  type: 'note' | 'meeting';
+  reminder?: boolean;
+}
+ 
+export interface Contact {
+  // ... campos existentes
+  notes: ContactNote[];
+  lastInteraction: string;
+}
+3. Requerimientos No Funcionales
+RNF01: Usabilidad
+* Interfaz intuitiva: Diseño fácil de entender que permita a usuarios realizar operaciones sin dificultades.
+RNF02: Rendimiento
+* Tiempo de respuesta: Todas las funciones deben ejecutarse en menos de 1 segundo.
+* Escalabilidad: La aplicación debe manejar al menos 1000 bloques sin pérdida significativa de rendimiento.
+RNF03: Seguridad
+* Protección de datos: Implementación de normativa de seguridad ISO27001.
+* Validación de entrada: Verificación de que la información ingresada tenga formato adecuado y sea segura.
+RNF04: Mantenibilidad
+* Código modular: Estructura bien organizada para facilitar futuras modificaciones.
+* Documentación: Documentación completa enfocada en el usuario y desarrolladores.
+4. Consideraciones Técnicas
+* El sistema debe ser desarrollado con enfoque en experiencia de usuario responsiva.
+* Debe implementarse con arquitectura que permita expansiones futuras.
+* La persistencia de datos debe garantizar integridad y disponibilidad.
+5. Prioridades de Implementación
+1. Funcionalidades básicas de gestión de contactos (RF01)
+2. Mecanismos de validación y seguridad (RF02, RNF03)
+3. Funcionalidades de exportación (RF03)
+4. Historial de cambios (RF04)
+5. Nuevas funcionalidades (RF05)

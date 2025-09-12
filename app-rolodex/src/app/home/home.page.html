@@ -1,0 +1,117 @@
+<!-- src/app/home/home.page.html -->
+
+<ion-header [translucent]="true">
+  <ion-toolbar>
+    <ion-title>
+      Rolodex
+    </ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <!-- Header con título cuando se hace scroll -->
+  <ion-header collapse="condense">
+    <ion-toolbar>
+      <ion-title size="large">Rolodex</ion-title>
+    </ion-toolbar>
+  </ion-header>
+
+  <!-- Barra de búsqueda -->
+  <div class="search-container">
+    <ion-searchbar
+      placeholder="Buscar contactos..."
+      [(ngModel)]="searchTerm"
+      (ionInput)="onSearchChange($event)"
+      show-clear-button="focus">
+    </ion-searchbar>
+  </div>
+
+  <!-- Lista de contactos -->
+  <div class="contacts-container">
+    <div *ngIf="filteredContacts.length === 0" class="no-contacts">
+      <ion-icon name="person" size="large"></ion-icon>
+      <p>No hay contactos que mostrar</p>
+      <p class="subtitle">{{ searchTerm ? 'No se encontraron resultados' : 'Agrega tu primer contacto usando el botón +' }}</p>
+    </div>
+
+    <ion-card *ngFor="let contact of filteredContacts" class="contact-card">
+      <ion-card-header>
+        <div class="contact-header">
+          <div class="contact-avatar">
+            <span>{{ getInitials(contact.name) }}</span>
+          </div>
+          <div class="contact-info">
+            <ion-card-title>{{ contact.name }}</ion-card-title>
+            <ion-card-subtitle *ngIf="contact.position && contact.company">
+              {{ contact.position }} en {{ contact.company }}
+            </ion-card-subtitle>
+            <ion-card-subtitle *ngIf="contact.company && !contact.position">
+              {{ contact.company }}
+            </ion-card-subtitle>
+            <ion-card-subtitle *ngIf="contact.position && !contact.company">
+              {{ contact.position }}
+            </ion-card-subtitle>
+          </div>
+          <ion-chip [color]="getPriorityColor(contact.priority)" class="priority-chip">
+            {{ getPriorityText(contact.priority) }}
+          </ion-chip>
+        </div>
+      </ion-card-header>
+
+      <ion-card-content>
+        <!-- Enlaces de contacto -->
+        <div class="contact-links" *ngIf="contact.email || contact.phone">
+          <div class="contact-link" *ngIf="contact.email">
+            <ion-icon name="mail"></ion-icon>
+            <span>{{ contact.email }}</span>
+          </div>
+          <div class="contact-link" *ngIf="contact.phone">
+            <ion-icon name="call"></ion-icon>
+            <span>{{ contact.phone }}</span>
+          </div>
+        </div>
+
+        <!-- Tags -->
+        <div class="tags-container" *ngIf="contact.tags.length > 0">
+          <ion-chip *ngFor="let tag of contact.tags" color="primary" outline="true">
+            {{ tag }}
+          </ion-chip>
+        </div>
+
+        <!-- Información de fechas -->
+        <div class="date-info">
+          <small>
+            Creado: {{ formatDate(contact.dateCreated) }} | 
+            Última interacción: {{ formatDate(contact.lastInteraction) }}
+          </small>
+        </div>
+
+        <!-- Notas resumidas -->
+        <div class="notes-preview" *ngIf="contact.notes.length > 0">
+          <p><strong>Última nota:</strong> {{ contact.notes[0].text | slice:0:100 }}
+            <span *ngIf="contact.notes[0].text.length > 100">...</span>
+          </p>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </div>
+
+  <!-- Botón flotante para agregar contacto -->
+  <ion-fab slot="fixed" vertical="top" horizontal="end" class="fab-container">
+    <ion-fab-button 
+      [class.rotated]="showForm"
+      (click)="toggleForm()"
+      color="primary">
+      <ion-icon [name]="showForm ? 'close' : 'add'"></ion-icon>
+    </ion-fab-button>
+  </ion-fab>
+
+  <!-- Formulario flotante -->
+  <div class="floating-form" [class.show]="showForm">
+    <app-contact-form
+      [isVisible]="showForm"
+      (formClosed)="onFormClosed()"
+      (contactSaved)="onContactSaved($event)">
+    </app-contact-form>
+  </div>
+</ion-content>

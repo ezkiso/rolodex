@@ -1,0 +1,204 @@
+.search-container {
+  padding: 16px;
+  background: var(--ion-color-light);
+}
+
+.contacts-container {
+  padding: 0 16px 100px 16px;
+}
+
+.no-contacts {
+  text-align: center;
+  padding: 60px 20px;
+  color: var(--ion-color-medium);
+  
+  ion-icon {
+    margin-bottom: 16px;
+    color: var(--ion-color-medium);
+  }
+  
+  p {
+    margin: 8px 0;
+    font-size: 18px;
+    font-weight: 500;
+  }
+  
+  .subtitle {
+    font-size: 14px;
+    font-weight: normal;
+  }
+}
+
+.contact-card {
+  margin-bottom: 16px;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+  }
+}
+
+.contact-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.contact-avatar {
+  width: 50px;
+  height: 50px;
+  background: var(--ion-color-primary);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  
+  span {
+    color: white;
+    font-weight: bold;
+    font-size: 18px;
+  }
+}
+
+.contact-info {
+  flex: 1;
+  min-width: 0;
+  
+  ion-card-title {
+    font-size: 20px;
+    margin-bottom: 4px;
+  }
+  
+  ion-card-subtitle {
+    font-size: 14px;
+    margin-bottom: 2px;
+  }
+}
+
+.priority-chip {
+  align-self: flex-start;
+  font-size: 12px;
+  height: 24px;
+}
+
+.contact-links {
+  margin: 16px 0;
+}
+
+.contact-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  font-size: 14px;
+  
+  ion-icon {
+    color: var(--ion-color-primary);
+    font-size: 16px;
+  }
+}
+
+.tags-container {
+  margin: 16px 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  
+  ion-chip {
+    font-size: 12px;
+    height: 28px;
+  }
+}
+
+.date-info {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--ion-color-light-shade);
+  
+  small {
+    color: var(--ion-color-medium);
+    font-size: 12px;
+  }
+}
+
+.notes-preview {
+  margin-top: 12px;
+  padding: 12px;
+  background: var(--ion-color-light);
+  border-radius: 8px;
+  border-left: 4px solid var(--ion-color-primary);
+  
+  p {
+    margin: 0;
+    font-size: 14px;
+    line-height: 1.4;
+  }
+}
+
+/* Estilos del botón flotante */
+.fab-container {
+  margin: 16px;
+  
+  ion-fab-button {
+    --box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+    transition: transform 0.3s ease;
+    
+    &.rotated {
+      transform: rotate(45deg);
+    }
+  }
+}
+
+/* Estilos del formulario flotante */
+.floating-form {
+  position: fixed;
+  top: 80px;
+  right: 16px;
+  width: 320px;
+  max-width: calc(100vw - 32px);
+  z-index: 1000;
+  opacity: 0;
+  transform: translateY(-20px) scale(0.95);
+  transition: all 0.3s ease;
+  pointer-events: none;
+  
+  &.show {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+    pointer-events: all;
+  }
+  
+  ion-card {
+    margin: 0;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+    border-radius: 12px;
+  }
+}
+
+/* Responsive para móviles */
+@media (max-width: 768px) {
+  .floating-form {
+    position: fixed;
+    top: 80px;
+    left: 16px;
+    right: 16px;
+    width: auto;
+  }
+  
+  .contact-header {
+    gap: 12px;
+  }
+  
+  .contact-avatar {
+    width: 40px;
+    height: 40px;
+    
+    span {
+      font-size: 16px;
+    }
+  }
+} 

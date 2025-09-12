@@ -1,0 +1,209 @@
+.contact-form-card {
+  margin: 0;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
+  border-radius: 12px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  
+  ion-card-title {
+    margin: 0;
+    font-size: 20px;
+    font-weight: 600;
+  }
+  
+  .close-button {
+    --padding-start: 8px;
+    --padding-end: 8px;
+  }
+}
+
+.form-section {
+  margin-bottom: 24px;
+  
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--ion-color-primary);
+    margin: 0 0 16px 0;
+    padding-bottom: 8px;
+    border-bottom: 1px solid var(--ion-color-light-shade);
+  }
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+  
+  h3 {
+    margin: 0;
+    border: none;
+    padding: 0;
+  }
+}
+
+/* Estilos para items del formulario */
+ion-item {
+  --border-width: 0 0 1px 0;
+  --border-color: var(--ion-color-light-shade);
+  --padding-start: 0;
+  --padding-end: 0;
+  margin-bottom: 12px;
+  
+  &.ion-invalid {
+    --border-color: var(--ion-color-danger);
+  }
+  
+  ion-label {
+    font-weight: 500;
+    margin-bottom: 4px;
+  }
+  
+  ion-input, ion-textarea, ion-select {
+    --padding-start: 0;
+    --padding-end: 0;
+  }
+}
+
+/* Estilos específicos para enlaces */
+.link-item {
+  background: var(--ion-color-light);
+  border-radius: 8px;
+  padding: 12px;
+  margin-bottom: 12px;
+  border-left: 4px solid var(--ion-color-primary);
+  
+  ion-item {
+    --background: transparent;
+    margin-bottom: 8px;
+  }
+  
+  ion-grid {
+    --ion-grid-padding: 0;
+  }
+  
+  ion-col {
+    --ion-grid-column-padding: 4px;
+  }
+}
+
+/* Estilos específicos para notas */
+.note-item {
+  background: var(--ion-color-light);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 12px;
+  border-left: 4px solid var(--ion-color-secondary);
+  
+  ion-item {
+    --background: transparent;
+    margin-bottom: 12px;
+  }
+  
+  .note-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+  }
+}
+
+/* Mensaje cuando no hay items */
+.no-items {
+  text-align: center;
+  color: var(--ion-color-medium);
+  font-style: italic;
+  margin: 16px 0;
+  padding: 16px;
+  background: var(--ion-color-light);
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+/* Botones de acción */
+.form-actions {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--ion-color-light-shade);
+  
+  ion-button {
+    margin-bottom: 12px;
+    
+    &:last-child {
+      margin-bottom: 0;
+    }
+    
+    ion-icon {
+      margin-right: 8px;
+    }
+  }
+}
+
+/* Validación visual */
+.ion-invalid {
+  ion-input, ion-textarea {
+    --border-color: var(--ion-color-danger) !important;
+  }
+}
+
+.ion-valid {
+  ion-input, ion-textarea {
+    --border-color: var(--ion-color-success) !important;
+  }
+}
+
+/* Estilos responsive */
+@media (max-width: 768px) {
+  .contact-form-card {
+    max-height: 85vh;
+  }
+  
+  .link-item, .note-item {
+    padding: 12px 8px;
+  }
+  
+  .section-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    
+    ion-button {
+      align-self: flex-end;
+    }
+  }
+}
+
+/* Animaciones suaves */
+.link-item, .note-item {
+  transition: all 0.3s ease;
+  
+  &:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  }
+}
+
+/* Estilos para el scroll del formulario */
+.contact-form-card::-webkit-scrollbar {
+  width: 6px;
+}
+
+.contact-form-card::-webkit-scrollbar-track {
+  background: var(--ion-color-light);
+  border-radius: 3px;
+}
+
+.contact-form-card::-webkit-scrollbar-thumb {
+  background: var(--ion-color-medium);
+  border-radius: 3px;
+}
+
+.contact-form-card::-webkit-scrollbar-thumb:hover {
+  background: var(--ion-color-dark);
+}

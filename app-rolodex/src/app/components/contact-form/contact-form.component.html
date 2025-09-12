@@ -1,0 +1,231 @@
+<ion-card class="contact-form-card">
+  <ion-card-header>
+    <div class="form-header">
+      <ion-card-title>
+        {{ contact ? 'Editar Contacto' : 'Nuevo Contacto' }}
+      </ion-card-title>
+      <ion-button 
+        fill="clear" 
+        size="small" 
+        (click)="confirmClose()"
+        class="close-button">
+        <ion-icon name="close"></ion-icon>
+      </ion-button>
+    </div>
+  </ion-card-header>
+
+  <ion-card-content>
+    <form [formGroup]="contactForm" (ngSubmit)="saveContact()">
+      
+      <!-- Información básica -->
+      <div class="form-section">
+        <h3>Información Básica</h3>
+        
+        <ion-item>
+          <ion-label position="stacked">Nombre Completo *</ion-label>
+          <ion-input 
+            formControlName="name"
+            placeholder="Ingresa el nombre completo"
+            [class.ion-invalid]="contactForm.get('name')?.invalid && contactForm.get('name')?.touched">
+          </ion-input>
+        </ion-item>
+
+        <ion-item>
+          <ion-label position="stacked">Empresa</ion-label>
+          <ion-input 
+            formControlName="company"
+            placeholder="Nombre de la empresa">
+          </ion-input>
+        </ion-item>
+
+        <ion-item>
+          <ion-label position="stacked">Cargo</ion-label>
+          <ion-input 
+            formControlName="position"
+            placeholder="Cargo o posición">
+          </ion-input>
+        </ion-item>
+
+        <ion-item>
+          <ion-label position="stacked">Email</ion-label>
+          <ion-input 
+            type="email"
+            formControlName="email"
+            placeholder="correo@ejemplo.com"
+            [class.ion-invalid]="contactForm.get('email')?.invalid && contactForm.get('email')?.touched">
+          </ion-input>
+        </ion-item>
+
+        <ion-item>
+          <ion-label position="stacked">Teléfono</ion-label>
+          <ion-input 
+            type="tel"
+            formControlName="phone"
+            placeholder="+56 9 1234 5678">
+          </ion-input>
+        </ion-item>
+
+        <ion-item>
+          <ion-label position="stacked">Prioridad *</ion-label>
+          <ion-select formControlName="priority" placeholder="Seleccionar prioridad">
+            <ion-select-option 
+              *ngFor="let priority of priorityOptions" 
+              [value]="priority.value">
+              {{ priority.label }}
+            </ion-select-option>
+          </ion-select>
+        </ion-item>
+
+        <ion-item>
+          <ion-label position="stacked">Tags</ion-label>
+          <ion-input 
+            formControlName="tags"
+            placeholder="Separa por comas: Cliente, Importante, Trabajo">
+          </ion-input>
+        </ion-item>
+      </div>
+
+      <!-- Enlaces adicionales -->
+      <div class="form-section">
+        <div class="section-header">
+          <h3>Enlaces Adicionales</h3>
+          <ion-button 
+            size="small" 
+            fill="outline" 
+            (click)="addLink()">
+            <ion-icon name="add"></ion-icon>
+            Agregar
+          </ion-button>
+        </div>
+
+        <div formArrayName="links">
+          <div 
+            *ngFor="let linkControl of links.controls; let i = index" 
+            [formGroupName]="i"
+            class="link-item">
+            <ion-grid>
+              <ion-row>
+                <ion-col size="3">
+                  <ion-item>
+                    <ion-select formControlName="type" placeholder="Tipo">
+                      <ion-select-option 
+                        *ngFor="let linkType of linkTypes" 
+                        [value]="linkType.value">
+                        {{ linkType.label }}
+                      </ion-select-option>
+                    </ion-select>
+                  </ion-item>
+                </ion-col>
+                <ion-col size="7">
+                  <ion-item>
+                    <ion-input 
+                      formControlName="value"
+                      [placeholder]="'Ingresa ' + getLinkLabel(linkControl.get('type')?.value)">
+                  </ion-input>
+                  </ion-item>
+                </ion-col>
+                <ion-col size="2">
+                  <ion-button 
+                    fill="clear" 
+                    color="danger"
+                    size="small"
+                    (click)="removeLink(i)">
+                    <ion-icon name="trash"></ion-icon>
+                  </ion-button>
+                </ion-col>
+              </ion-row>
+              <ion-row>
+                <ion-col size="10">
+                  <ion-item>
+                    <ion-input 
+                      formControlName="label"
+                      placeholder="Etiqueta opcional (ej: Trabajo, Personal)">
+                    </ion-input>
+                  </ion-item>
+                </ion-col>
+              </ion-row>
+            </ion-grid>
+          </div>
+        </div>
+
+        <p *ngIf="links.length === 0" class="no-items">
+          No hay enlaces agregados. Haz clic en "Agregar" para añadir enlaces adicionales.
+        </p>
+      </div>
+
+      <!-- Notas -->
+      <div class="form-section">
+        <div class="section-header">
+          <h3>Notas</h3>
+          <ion-button 
+            size="small" 
+            fill="outline" 
+            (click)="addNote()">
+            <ion-icon name="add"></ion-icon>
+            Agregar Nota
+          </ion-button>
+        </div>
+
+        <div formArrayName="notes">
+          <div 
+            *ngFor="let noteControl of notes.controls; let i = index" 
+            [formGroupName]="i"
+            class="note-item">
+            <ion-item>
+              <ion-label position="stacked">Tipo de Nota</ion-label>
+              <ion-select formControlName="type">
+                <ion-select-option value="note">Nota General</ion-select-option>
+                <ion-select-option value="meeting">Reunión</ion-select-option>
+              </ion-select>
+            </ion-item>
+
+            <ion-item>
+              <ion-label position="stacked">Contenido *</ion-label>
+              <ion-textarea 
+                formControlName="text"
+                placeholder="Escribe tu nota aquí..."
+                rows="3"
+                auto-grow="true">
+              </ion-textarea>
+            </ion-item>
+
+            <div class="note-actions">
+              <ion-button 
+                fill="clear" 
+                color="danger"
+                size="small"
+                (click)="removeNote(i)">
+                <ion-icon name="trash"></ion-icon>
+                Eliminar
+              </ion-button>
+            </div>
+          </div>
+        </div>
+
+        <p *ngIf="notes.length === 0" class="no-items">
+          No hay notas agregadas. Haz clic en "Agregar Nota" para añadir información adicional.
+        </p>
+      </div>
+
+      <!-- Botones de acción -->
+      <div class="form-actions">
+        <ion-button 
+          expand="block" 
+          type="submit"
+          [disabled]="contactForm.invalid"
+          color="primary">
+          <ion-icon name="save"></ion-icon>
+          {{ contact ? 'Actualizar' : 'Guardar' }} Contacto
+        </ion-button>
+
+        <ion-button 
+          expand="block" 
+          fill="outline" 
+          type="button"
+          (click)="confirmClose()">
+          Cancelar
+        </ion-button>
+      </div>
+    </form>
+  </ion-card-content>
+</ion-card>
