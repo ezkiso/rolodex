@@ -1,3 +1,5 @@
+// src/app/models/contact.model.ts
+
 export interface ContactNote {
   text: string;
   date: string;
@@ -7,7 +9,7 @@ export interface ContactNote {
 }
 
 export interface ContactLink {
-  type: 'email' | 'phone' | 'linkedin' | 'twitter' | 'website';
+  type: 'email' | 'phone' | 'linkedin' | 'facebook' | 'instagram' | 'website';
   value: string;
   label?: string;
 }

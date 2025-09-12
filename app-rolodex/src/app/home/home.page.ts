@@ -1,5 +1,5 @@
 // src/app/home/home.page.ts
-
+import { SocialLinksComponent } from '../components/social-links/social-links.component';
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
@@ -69,7 +69,8 @@ import { ContactFormComponent } from '../components/contact-form/contact-form.co
     IonFab,
     IonFabButton,
     IonButton,
-    ContactFormComponent
+    ContactFormComponent,
+    SocialLinksComponent
   ],
 })
 export class HomePage implements OnInit {
@@ -155,6 +156,7 @@ export class HomePage implements OnInit {
     this.selectedContact = contact;
     this.showForm = true;
   }
+  
 
   // Función para eliminar contacto
   async deleteContact(contact: Contact) {

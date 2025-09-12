@@ -1,3 +1,5 @@
+<!-- src/app/components/contact-form/contact-form.component.html -->
+
 <ion-card class="contact-form-card">
   <ion-card-header>
     <div class="form-header">
@@ -120,8 +122,9 @@
                   <ion-item>
                     <ion-input 
                       formControlName="value"
-                      [placeholder]="'Ingresa ' + getLinkLabel(linkControl.get('type')?.value)">
-                  </ion-input>
+                      [placeholder]="'Ingresa ' + getLinkLabel(linkControl.get('type')?.value)"
+                    >
+                    </ion-input>
                   </ion-item>
                 </ion-col>
                 <ion-col size="2">

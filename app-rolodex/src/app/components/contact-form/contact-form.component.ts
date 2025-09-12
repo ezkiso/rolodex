@@ -1,6 +1,6 @@
 // src/app/components/contact-form/contact-form.component.ts
 
-import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
+import { Component, OnInit, Input, Output, EventEmitter, SimpleChanges, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormArray } from '@angular/forms';
 import { 
@@ -34,7 +34,8 @@ import {
   call,
   globe,
   logoLinkedin,
-  logoTwitter
+  logoFacebook,
+  logoInstagram
 } from 'ionicons/icons';
 import { Contact, ContactLink, ContactNote } from '../../models/contact.model';
 import { ContactService } from '../../services/contact.service';
@@ -64,7 +65,7 @@ import { ContactService } from '../../services/contact.service';
     IonCol
   ]
 })
-export class ContactFormComponent implements OnInit {
+export class ContactFormComponent implements OnInit, OnChanges {
   @Input() contact: Contact | null = null;
   @Input() isVisible: boolean = false;
   @Output() formClosed = new EventEmitter<void>();
@@ -81,9 +82,11 @@ export class ContactFormComponent implements OnInit {
     { value: 'email', label: 'Email', icon: 'mail' },
     { value: 'phone', label: 'Teléfono', icon: 'call' },
     { value: 'linkedin', label: 'LinkedIn', icon: 'logo-linkedin' },
-    { value: 'twitter', label: 'Twitter', icon: 'logo-twitter' },
+    { value: 'facebook', label: 'Facebook', icon: 'logo-facebook' },
+    { value: 'instagram', label: 'Instagram', icon: 'logo-instagram' },
     { value: 'website', label: 'Sitio Web', icon: 'globe' }
   ];
+
 
   constructor(
     private formBuilder: FormBuilder,
@@ -101,32 +104,71 @@ export class ContactFormComponent implements OnInit {
       call,
       globe,
       logoLinkedin,
-      logoTwitter
+      logoFacebook,
+      logoInstagram
     });
 
     this.contactForm = this.initializeForm();
   }
 
   ngOnInit() {
-    if (this.contact) {
-      this.loadContactData();
+    this.contactForm = this.initializeForm();
+    // No pongas lógica de rellenado aquí
+  }
+
+  ngOnChanges(changes: SimpleChanges) {
+    if (changes['contact'] && changes['contact'].currentValue) {
+      this.contactForm = this.initializeForm();
+
+      const c = changes['contact'].currentValue;
+      this.contactForm.patchValue({
+        name: c.name,
+        company: c.company,
+        position: c.position,
+        email: c.email,
+        phone: c.phone,
+        priority: c.priority,
+        tags: c.tags ? c.tags.join(', ') : '',
+      });
+
+      if (c.links && c.links.length > 0) {
+        const linksFG = c.links.map((link: ContactLink) =>
+          this.formBuilder.group({
+            type: [link.type],
+            value: [link.value],
+            label: [link.label || '']
+          })
+      );
+      const linksFA = this.formBuilder.array(linksFG);
+      this.contactForm.setControl('links', linksFA);
+      }
+
+      if (c.notes && c.notes.length > 0) {
+        const notesFG = c.notes.map((note: ContactNote) =>
+          this.formBuilder.group({
+            type: [note.type],
+            text: [note.text]
+          })
+        );
+        const notesFA = this.formBuilder.array(notesFG);
+        this.contactForm.setControl('notes', notesFA);
+      }
     }
   }
 
   private initializeForm(): FormGroup {
-    return this.formBuilder.group({
-      name: ['', [Validators.required, Validators.minLength(2)]],
-      company: [''],
-      position: [''],
-      email: ['', [Validators.email]],
-      phone: [''],
-      priority: ['medium', Validators.required],
-      tags: [''],
-      links: this.formBuilder.array([]),
-      notes: this.formBuilder.array([])
-    });
+  return this.formBuilder.group({
+    name: ['', [Validators.required, Validators.minLength(2)]],
+    company: [''],
+    position: [''],
+    email: ['', [Validators.email]],
+    phone: [''],
+    priority: ['medium', Validators.required],
+    tags: [''],
+    links: this.formBuilder.array([]),
+    notes: this.formBuilder.array([])
+  });
   }
-
   private loadContactData() {
     if (this.contact) {
       this.contactForm.patchValue({
@@ -149,7 +191,7 @@ export class ContactFormComponent implements OnInit {
         this.addNote(note);
       });
     }
-  }
+    }
 
   // Getters para FormArrays
   get links() {
@@ -158,11 +200,6 @@ export class ContactFormComponent implements OnInit {
 
   get notes() {
     return this.contactForm.get('notes') as FormArray;
-  }
-
-  getLinkLabel(type: string): string {
-    const found = this.linkTypes.find(lt => lt.value === type);
-    return found ? found.label : 'enlace';
   }
 
   // Funciones para manejar enlaces
@@ -195,20 +232,30 @@ export class ContactFormComponent implements OnInit {
 
   // Validar enlaces según su tipo
   validateLink(type: string, value: string): boolean {
+    if (!value) return true; // Enlaces vacíos son válidos
+    
     switch (type) {
       case 'email':
         return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
       case 'phone':
-        return /^[\+]?[1-9][\d]{0,15}$/.test(value.replace(/\s/g, ''));
+        return /^[\+]?[1-9][\d\s\-\(\)]{0,15}$/.test(value.replace(/\s/g, ''));
       case 'linkedin':
         return value.includes('linkedin.com/');
-      case 'twitter':
-        return value.includes('twitter.com/') || value.includes('x.com/');
+      case 'facebook':
+        return value.includes('facebook.com/') || value.includes('fb.com/');
+      case 'instagram':
+        return value.includes('instagram.com/') || value.startsWith('@');
       case 'website':
-        return /^https?:\/\//.test(value);
+        return /^https?:\/\//.test(value) || /^www\./.test(value);
       default:
         return true;
     }
+  }
+
+  // Función para obtener el label de un tipo de enlace
+  getLinkLabel(type: string): string {
+    const found = this.linkTypes.find(lt => lt.value === type);
+    return found ? found.label : 'enlace';
   }
 
   // Procesar tags (convertir string a array)

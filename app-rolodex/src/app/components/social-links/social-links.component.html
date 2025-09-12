@@ -1,0 +1,10 @@
+<div class="social-links">
+  <ion-button *ngFor="let link of links"
+    [href]="getUrl(link)"
+    target="_blank"
+    fill="clear"
+    color="primary">
+    <ion-icon [name]="getIcon(link.type)"></ion-icon>
+    {{ getLabel(link.type) }}
+  </ion-button>
+</div>

@@ -51,6 +51,7 @@
             <ion-card-subtitle *ngIf="contact.position && !contact.company">
               {{ contact.position }}
             </ion-card-subtitle>
+            <app-social-links [links]="contact.links"></app-social-links>
           </div>
           <div class="contact-actions">
             <ion-chip [color]="getPriorityColor(contact.priority)" class="priority-chip">
