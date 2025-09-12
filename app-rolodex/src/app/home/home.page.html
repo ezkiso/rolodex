@@ -52,9 +52,37 @@
               {{ contact.position }}
             </ion-card-subtitle>
           </div>
-          <ion-chip [color]="getPriorityColor(contact.priority)" class="priority-chip">
-            {{ getPriorityText(contact.priority) }}
-          </ion-chip>
+          <div class="contact-actions">
+            <ion-chip [color]="getPriorityColor(contact.priority)" class="priority-chip">
+              {{ getPriorityText(contact.priority) }}
+            </ion-chip>
+            <div class="action-buttons">
+              <ion-button 
+                fill="clear" 
+                size="small" 
+                color="medium"
+                (click)="showExportOptions(contact)"
+                title="Exportar contacto">
+                <ion-icon name="download"></ion-icon>
+              </ion-button>
+              <ion-button 
+                fill="clear" 
+                size="small" 
+                color="primary"
+                (click)="editContact(contact)"
+                title="Editar contacto">
+                <ion-icon name="create"></ion-icon>
+              </ion-button>
+              <ion-button 
+                fill="clear" 
+                size="small" 
+                color="danger"
+                (click)="deleteContact(contact)"
+                title="Eliminar contacto">
+                <ion-icon name="trash"></ion-icon>
+              </ion-button>
+            </div>
+          </div>
         </div>
       </ion-card-header>
 
@@ -109,6 +137,7 @@
   <!-- Formulario flotante -->
   <div class="floating-form" [class.show]="showForm">
     <app-contact-form
+      [contact]="selectedContact"
       [isVisible]="showForm"
       (formClosed)="onFormClosed()"
       (contactSaved)="onContactSaved($event)">

@@ -1,3 +1,5 @@
+// src/app/components/contact-form/contact-form.component.ts
+
 import { Component, OnInit, Input, Output, EventEmitter } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormArray } from '@angular/forms';
@@ -57,11 +59,9 @@ import { ContactService } from '../../services/contact.service';
     IonSelect,
     IonSelectOption,
     IonIcon,
-    IonChip,
     IonGrid,
     IonRow,
-    IonCol,
-    IonList
+    IonCol
   ]
 })
 export class ContactFormComponent implements OnInit {
@@ -112,11 +112,6 @@ export class ContactFormComponent implements OnInit {
       this.loadContactData();
     }
   }
-  
-  getLinkLabel(type: string): string {
-  const found = this.linkTypes.find(lt => lt.value === type);
-  return found ? found.label : 'enlace';
-  }
 
   private initializeForm(): FormGroup {
     return this.formBuilder.group({
@@ -163,6 +158,11 @@ export class ContactFormComponent implements OnInit {
 
   get notes() {
     return this.contactForm.get('notes') as FormArray;
+  }
+
+  getLinkLabel(type: string): string {
+    const found = this.linkTypes.find(lt => lt.value === type);
+    return found ? found.label : 'enlace';
   }
 
   // Funciones para manejar enlaces
