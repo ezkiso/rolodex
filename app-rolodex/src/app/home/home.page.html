@@ -62,9 +62,10 @@
                 fill="clear" 
                 size="small" 
                 color="medium"
-                (click)="showExportOptions(contact)"
-                title="Exportar contacto">
+                (click)="exportContactAsPDF(contact)"
+                title="Exportar contacto como PDF">
                 <ion-icon name="download"></ion-icon>
+                PDF
               </ion-button>
               <ion-button 
                 fill="clear" 
@@ -73,6 +74,7 @@
                 (click)="editContact(contact)"
                 title="Editar contacto">
                 <ion-icon name="create"></ion-icon>
+                Editar
               </ion-button>
               <ion-button 
                 fill="clear" 
@@ -81,6 +83,7 @@
                 (click)="deleteContact(contact)"
                 title="Eliminar contacto">
                 <ion-icon name="trash"></ion-icon>
+                Eliminar
               </ion-button>
             </div>
           </div>
@@ -88,17 +91,21 @@
       </ion-card-header>
 
       <ion-card-content>
-        <!-- Enlaces de contacto -->
-        <div class="contact-links" *ngIf="contact.email || contact.phone">
-          <div class="contact-link" *ngIf="contact.email">
-            <ion-icon name="mail"></ion-icon>
-            <span>{{ contact.email }}</span>
-          </div>
+        <div class="contact-link" *ngIf="contact.email">
+          <ion-icon name="mail"></ion-icon>
+          <ion-input
+            [value]="contact.email"
+            readonly
+            type="email"
+            style="user-select: text; background: transparent; border: none; padding: 0; font-size: inherit;">
+          </ion-input>
+        </div>
           <div class="contact-link" *ngIf="contact.phone">
             <ion-icon name="call"></ion-icon>
-            <span>{{ contact.phone }}</span>
+            <a [href]="'tel:' + contact.phone" style="color: var(--ion-color-primary); text-decoration: underline;">
+              {{ contact.phone }}
+            </a>
           </div>
-        </div>
 
         <!-- Tags -->
         <div class="tags-container" *ngIf="contact.tags.length > 0">

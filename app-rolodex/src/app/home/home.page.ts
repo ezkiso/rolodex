@@ -9,9 +9,7 @@ import {
   IonTitle, 
   IonToolbar,
   IonSearchbar,
-  IonList,
-  IonItem,
-  IonLabel,
+  IonInput,
   IonCard,
   IonCardContent,
   IonCardHeader,
@@ -22,7 +20,6 @@ import {
   IonFab,
   IonFabButton,
   IonButton,
-  IonButtons,
   AlertController,
   ToastController
 } from '@ionic/angular/standalone';
@@ -69,6 +66,7 @@ import { ContactFormComponent } from '../components/contact-form/contact-form.co
     IonFab,
     IonFabButton,
     IonButton,
+    IonInput,
     ContactFormComponent,
     SocialLinksComponent
   ],
@@ -85,6 +83,7 @@ export class HomePage implements OnInit {
     private alertController: AlertController,
     private toastController: ToastController
   ) {
+    
     // Registrar los iconos que vamos a usar
     addIcons({ 
       add, 
@@ -103,6 +102,7 @@ export class HomePage implements OnInit {
     
     this.contacts$ = this.contactService.getContacts();
   }
+  
 
   ngOnInit() {
     // Suscribirse a los cambios en los contactos
@@ -134,6 +134,7 @@ export class HomePage implements OnInit {
       default: return 'medium';
     }
   }
+
 
   // Función para obtener el texto de la prioridad
   getPriorityText(priority: string): string {

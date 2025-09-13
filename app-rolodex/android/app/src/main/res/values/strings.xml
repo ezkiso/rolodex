@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">app-rolodex</string>
+    <string name="title_activity_main">app-rolodex</string>
+    <string name="package_name">com.ezkiso.rolodex</string>
+    <string name="custom_url_scheme">com.ezkiso.rolodex</string>
+</resources>
