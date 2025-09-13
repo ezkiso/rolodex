@@ -9,7 +9,9 @@ import {
   IonTitle, 
   IonToolbar,
   IonSearchbar,
-  IonInput,
+  IonList,
+  IonItem,
+  IonLabel,
   IonCard,
   IonCardContent,
   IonCardHeader,
@@ -20,8 +22,10 @@ import {
   IonFab,
   IonFabButton,
   IonButton,
+  IonButtons,
   AlertController,
-  ToastController
+  ToastController,
+  ActionSheetController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { 
@@ -36,12 +40,24 @@ import {
   create,
   trash,
   download,
-  share
+  share,
+  shareOutline,
+  createOutline,
+  trashOutline,
+  mailOutline,
+  callOutline,
+  documentTextOutline,
+  imageOutline,
+  checkmarkCircle
 } from 'ionicons/icons';
 import { Observable } from 'rxjs';
 import { Contact } from '../models/contact.model';
 import { ContactService } from '../services/contact.service';
 import { ContactFormComponent } from '../components/contact-form/contact-form.component';
+
+// Para poder usar html2canvas y jsPDF
+declare const html2canvas: any;
+declare const jsPDF: any;
 
 @Component({
   selector: 'app-home',
@@ -66,7 +82,6 @@ import { ContactFormComponent } from '../components/contact-form/contact-form.co
     IonFab,
     IonFabButton,
     IonButton,
-    IonInput,
     ContactFormComponent,
     SocialLinksComponent
   ],
@@ -81,9 +96,9 @@ export class HomePage implements OnInit {
   constructor(
     private contactService: ContactService,
     private alertController: AlertController,
-    private toastController: ToastController
+    private toastController: ToastController,
+    private actionSheetController: ActionSheetController
   ) {
-    
     // Registrar los iconos que vamos a usar
     addIcons({ 
       add, 
@@ -97,18 +112,45 @@ export class HomePage implements OnInit {
       create,
       trash,
       download,
-      share
+      share,
+      shareOutline,
+      createOutline,
+      trashOutline,
+      mailOutline,
+      callOutline,
+      documentTextOutline,
+      imageOutline,
+      checkmarkCircle
     });
     
     this.contacts$ = this.contactService.getContacts();
+    
+    // Cargar librerías necesarias para exportar
+    this.loadExportLibraries();
   }
-  
 
   ngOnInit() {
     // Suscribirse a los cambios en los contactos
     this.contacts$.subscribe(contacts => {
       this.filteredContacts = contacts;
     });
+  }
+
+  // Cargar librerías de exportación
+  private loadExportLibraries() {
+    // Cargar html2canvas
+    if (!document.querySelector('script[src*="html2canvas"]')) {
+      const html2canvasScript = document.createElement('script');
+      html2canvasScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js';
+      document.head.appendChild(html2canvasScript);
+    }
+
+    // Cargar jsPDF
+    if (!document.querySelector('script[src*="jspdf"]')) {
+      const jsPDFScript = document.createElement('script');
+      jsPDFScript.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+      document.head.appendChild(jsPDFScript);
+    }
   }
 
   // Función para buscar contactos
@@ -135,7 +177,6 @@ export class HomePage implements OnInit {
     }
   }
 
-
   // Función para obtener el texto de la prioridad
   getPriorityText(priority: string): string {
     switch (priority) {
@@ -158,7 +199,6 @@ export class HomePage implements OnInit {
     this.showForm = true;
   }
   
-
   // Función para eliminar contacto
   async deleteContact(contact: Contact) {
     const alert = await this.alertController.create({
@@ -192,182 +232,168 @@ export class HomePage implements OnInit {
     await alert.present();
   }
 
-  // Función para exportar contacto como imagen
-  async exportContactAsImage(contact: Contact) {
+  // Función para exportar contacto como JPG
+  async exportContactAsJPG(contact: Contact, cardElement: HTMLElement) {
     try {
-      // Crear un canvas HTML para generar la imagen
-      const canvas = document.createElement('canvas');
-      const ctx = canvas.getContext('2d');
-      
-      if (!ctx) {
-        throw new Error('No se pudo crear el contexto del canvas');
+      const toast = await this.toastController.create({
+        message: 'Generando imagen...',
+        duration: 1000,
+        color: 'primary',
+        position: 'top'
+      });
+      await toast.present();
+
+      // Esperar un poco para que se carguen las librerías si es necesario
+      await new Promise(resolve => setTimeout(resolve, 500));
+
+      if (typeof html2canvas === 'undefined') {
+        throw new Error('html2canvas no está disponible');
       }
 
-      // Configurar el tamaño del canvas
-      canvas.width = 400;
-      canvas.height = 600;
+      // Capturar el elemento de la tarjeta
+      const canvas = await html2canvas(cardElement, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#ffffff',
+        width: cardElement.offsetWidth,
+        height: cardElement.offsetHeight
+      });
 
-      // Fondo blanco
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-      // Configurar fuente
-      ctx.fillStyle = '#000000';
-      ctx.font = 'bold 24px Arial';
-      
-      // Título
-      ctx.fillText('ROLODEX - CONTACTO', 20, 40);
-      
-      // Línea separadora
-      ctx.beginPath();
-      ctx.moveTo(20, 60);
-      ctx.lineTo(380, 60);
-      ctx.strokeStyle = '#cccccc';
-      ctx.stroke();
-
-      // Información del contacto
-      let yPosition = 100;
-      const lineHeight = 30;
-      
-      ctx.font = 'bold 20px Arial';
-      ctx.fillText(contact.name, 20, yPosition);
-      yPosition += lineHeight + 10;
-
-      ctx.font = '16px Arial';
-      if (contact.company) {
-        ctx.fillText(`Empresa: ${contact.company}`, 20, yPosition);
-        yPosition += lineHeight;
-      }
-      
-      if (contact.position) {
-        ctx.fillText(`Cargo: ${contact.position}`, 20, yPosition);
-        yPosition += lineHeight;
-      }
-      
-      if (contact.email) {
-        ctx.fillText(`Email: ${contact.email}`, 20, yPosition);
-        yPosition += lineHeight;
-      }
-      
-      if (contact.phone) {
-        ctx.fillText(`Teléfono: ${contact.phone}`, 20, yPosition);
-        yPosition += lineHeight;
-      }
-
-      ctx.fillText(`Prioridad: ${this.getPriorityText(contact.priority)}`, 20, yPosition);
-      yPosition += lineHeight + 10;
-
-      if (contact.tags.length > 0) {
-        ctx.fillText(`Tags: ${contact.tags.join(', ')}`, 20, yPosition);
-        yPosition += lineHeight + 10;
-      }
-
-      // Fecha de creación
-      ctx.font = '12px Arial';
-      ctx.fillStyle = '#666666';
-      ctx.fillText(`Creado: ${this.formatDate(contact.dateCreated)}`, 20, yPosition);
-
-      // Convertir canvas a imagen y descargar
-      canvas.toBlob((blob) => {
+      // Convertir a JPG y descargar
+      canvas.toBlob((blob: Blob | null) => {
         if (blob) {
           const url = URL.createObjectURL(blob);
           const link = document.createElement('a');
           link.href = url;
-          link.download = `${contact.name.replace(/\s+/g, '_')}_contacto.png`;
+          link.download = `${contact.name.replace(/\s+/g, '_')}_contacto.jpg`;
+          
+          // Agregar al DOM temporalmente para hacer click
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-        }
-      }, 'image/png');
+          
+          // Limpiar URL
+          setTimeout(() => URL.revokeObjectURL(url), 100);
 
-      const toast = await this.toastController.create({
-        message: 'Contacto exportado como imagen',
-        duration: 2000,
-        color: 'success',
-        position: 'top'
-      });
-      toast.present();
+          this.showSuccessToast('Contacto exportado como JPG');
+        }
+      }, 'image/jpeg', 0.9);
 
     } catch (error) {
-      const toast = await this.toastController.create({
-        message: 'Error al exportar contacto',
-        duration: 2000,
-        color: 'danger',
-        position: 'top'
-      });
-      toast.present();
+      console.error('Error al exportar como JPG:', error);
+      this.showErrorToast('Error al exportar como JPG');
     }
   }
 
-  // Función para exportar contacto como PDF (simulado)
-  async exportContactAsPDF(contact: Contact) {
-    // Para un PDF real necesitaríamos una librería como jsPDF
-    // Por ahora mostraremos los datos como texto para descarga
-    
-    const contactData = `
-ROLODEX - CONTACTO
-==================
+  // Función para exportar contacto como PDF
+  async exportContactAsPDF(contact: Contact, cardElement: HTMLElement) {
+    try {
+      const toast = await this.toastController.create({
+        message: 'Generando PDF...',
+        duration: 1000,
+        color: 'primary',
+        position: 'top'
+      });
+      await toast.present();
 
-Nombre: ${contact.name}
-${contact.company ? `Empresa: ${contact.company}` : ''}
-${contact.position ? `Cargo: ${contact.position}` : ''}
-${contact.email ? `Email: ${contact.email}` : ''}
-${contact.phone ? `Teléfono: ${contact.phone}` : ''}
-Prioridad: ${this.getPriorityText(contact.priority)}
-${contact.tags.length > 0 ? `Tags: ${contact.tags.join(', ')}` : ''}
+      // Capturar el elemento de la tarjeta
+      const canvas = await html2canvas(cardElement, {
+        scale: 2,
+        useCORS: true,
+        allowTaint: false,
+        backgroundColor: '#ffffff',
+        width: cardElement.offsetWidth,
+        height: cardElement.offsetHeight
+      });
 
-Enlaces adicionales:
-${contact.links.map(link => `- ${link.label || link.type}: ${link.value}`).join('\n')}
+      const imgData = canvas.toDataURL('image/jpeg', 0.9);
+      
+      // Crear PDF
+      const pdf = new jsPDF('p', 'mm', 'a4');
+      
+      // Calcular dimensiones para el PDF
+      const pdfWidth = 210; // A4 width in mm
+      const pdfHeight = 297; // A4 height in mm
+      const imgWidth = pdfWidth - 20; // margin
+      const imgHeight = (canvas.height * imgWidth) / canvas.width;
+      
+      // Centrar la imagen
+      const x = 10;
+      const y = Math.max(10, (pdfHeight - imgHeight) / 2);
+      
+      pdf.addImage(imgData, 'JPEG', x, y, imgWidth, imgHeight);
+      
+      // Generar el PDF y descargarlo
+      pdf.save(`${contact.name.replace(/\s+/g, '_')}_contacto.pdf`);
+      
+      this.showSuccessToast('Contacto exportado como PDF');
 
-Notas:
-${contact.notes.map(note => `- ${note.type}: ${note.text}`).join('\n')}
-
-Creado: ${this.formatDate(contact.dateCreated)}
-Última interacción: ${this.formatDate(contact.lastInteraction)}
-    `.trim();
-
-    const blob = new Blob([contactData], { type: 'text/plain' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `${contact.name.replace(/\s+/g, '_')}_contacto.txt`;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    URL.revokeObjectURL(url);
-
-    const toast = await this.toastController.create({
-      message: 'Contacto exportado como archivo de texto',
-      duration: 2000,
-      color: 'success',
-      position: 'top'
-    });
-    toast.present();
+    } catch (error) {
+      console.error('Error al exportar como PDF:', error);
+      this.showErrorToast('Error al exportar como PDF');
+    }
   }
 
-  // Función para mostrar opciones de exportación
-  async showExportOptions(contact: Contact) {
-    const alert = await this.alertController.create({
-      header: 'Exportar Contacto',
-      message: `¿Cómo quieres exportar a ${contact.name}?`,
+  // Función para mostrar opciones de exportación con ActionSheet
+  async showExportOptions(contact: Contact, event: Event) {
+    // Encontrar el elemento ion-card más cercano
+    const target = event.target as HTMLElement;
+    const cardElement = target.closest('ion-card') as HTMLElement;
+    
+    if (!cardElement) {
+      this.showErrorToast('Error al obtener la tarjeta del contacto');
+      return;
+    }
+
+    const actionSheet = await this.actionSheetController.create({
+      header: `Compartir ${contact.name}`,
       buttons: [
         {
-          text: 'Como Imagen (PNG)',
-          handler: () => this.exportContactAsImage(contact)
+          text: 'Descargar como JPG',
+          icon: 'image-outline',
+          handler: () => {
+            this.exportContactAsJPG(contact, cardElement);
+          }
         },
         {
-          text: 'Como Archivo de Texto',
-          handler: () => this.exportContactAsPDF(contact)
+          text: 'Descargar como PDF',
+          icon: 'document-text-outline',
+          handler: () => {
+            this.exportContactAsPDF(contact, cardElement);
+          }
         },
         {
           text: 'Cancelar',
+          icon: 'close',
           role: 'cancel'
         }
       ]
     });
 
-    await alert.present();
+    await actionSheet.present();
+  }
+
+  // Funciones auxiliares para mostrar toasts
+  private async showSuccessToast(message: string) {
+    const toast = await this.toastController.create({
+      message,
+      duration: 2000,
+      color: 'success',
+      position: 'top',
+      icon: 'checkmark-circle'
+    });
+    await toast.present();
+  }
+
+  private async showErrorToast(message: string) {
+    const toast = await this.toastController.create({
+      message,
+      duration: 3000,
+      color: 'danger',
+      position: 'top'
+    });
+    await toast.present();
   }
 
   // Función para formatear la fecha

@@ -36,6 +36,7 @@
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative; // Para posicionar el botón de compartir
   
   &:hover {
     transform: translateY(-2px);
@@ -43,10 +44,39 @@
   }
 }
 
+// Botón de compartir en esquina superior derecha
+.share-button-container {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 10;
+  
+  .share-button {
+    --padding-start: 8px;
+    --padding-end: 8px;
+    --padding-top: 8px;
+    --padding-bottom: 8px;
+    --border-radius: 50%;
+    --background: var(--ion-color-primary);
+    --color: white;
+    width: 36px;
+    height: 36px;
+    
+    ion-icon {
+      font-size: 18px;
+    }
+    
+    &:hover {
+      --background: var(--ion-color-primary-shade);
+    }
+  }
+}
+
 .contact-header {
   display: flex;
   align-items: flex-start;
   gap: 16px;
+  padding-right: 50px; // Espacio para el botón de compartir
 }
 
 .contact-avatar {
@@ -81,10 +111,35 @@
   }
 }
 
-.priority-chip {
-  align-self: flex-start;
-  font-size: 12px;
-  height: 24px;
+.contact-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 8px;
+  
+  .priority-chip {
+    font-size: 12px;
+    height: 24px;
+  }
+  
+  .action-buttons {
+    display: flex;
+    gap: 4px;
+    
+    .action-btn {
+      --padding-start: 8px;
+      --padding-end: 8px;
+      --padding-top: 8px;
+      --padding-bottom: 8px;
+      --border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      
+      ion-icon {
+        font-size: 16px;
+      }
+    }
+  }
 }
 
 .contact-links {
@@ -193,6 +248,7 @@
   
   .contact-header {
     gap: 12px;
+    padding-right: 45px; // Ajustar para móvil
   }
   
   .contact-avatar {
@@ -205,16 +261,44 @@
   }
   
   .contact-actions {
+    .priority-chip {
+      font-size: 10px;
+      height: 20px;
+    }
+    
     .action-buttons {
-      flex-direction: column;
+      flex-direction: row; // Mantener horizontal en móvil
+      gap: 2px;
       
-      ion-button {
-        width: 36px;
-        height: 36px;
+      .action-btn {
+        width: 28px;
+        height: 28px;
+        --padding-start: 4px;
+        --padding-end: 4px;
+        --padding-top: 4px;
+        --padding-bottom: 4px;
         
         ion-icon {
-          font-size: 16px;
+          font-size: 14px;
         }
+      }
+    }
+  }
+  
+  .share-button-container {
+    top: 6px;
+    right: 6px;
+    
+    .share-button {
+      width: 32px;
+      height: 32px;
+      --padding-start: 6px;
+      --padding-end: 6px;
+      --padding-top: 6px;
+      --padding-bottom: 6px;
+      
+      ion-icon {
+        font-size: 16px;
       }
     }
   }

@@ -1,9 +1,6 @@
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { Contact, ContactNote } from '../models/contact.model';
-import { jsPDF } from 'jspdf';
-import { Filesystem, Directory } from '@capacitor/filesystem';
-import { Share } from '@capacitor/share';
 
 @Injectable({
   providedIn: 'root'
@@ -155,57 +152,4 @@ export class ContactService {
       }
     ];
   }
-  async exportContactAsPDF(contact: Contact): Promise<void> {
-    const doc = new jsPDF();
-
-    // Título
-    doc.setFontSize(18);
-    doc.text('Contacto', 10, 15);
-
-    // Datos básicos
-    doc.setFontSize(12);
-    doc.text(`Nombre: ${contact.name}`, 10, 30);
-    doc.text(`Empresa: ${contact.company || ''}`, 10, 40);
-    doc.text(`Cargo: ${contact.position || ''}`, 10, 50);
-    doc.text(`Email: ${contact.email || ''}`, 10, 60);
-    doc.text(`Teléfono: ${contact.phone || ''}`, 10, 70);
-    doc.text(`Prioridad: ${contact.priority || ''}`, 10, 80);
-    doc.text(`Tags: ${contact.tags?.join(', ') || ''}`, 10, 90);
-
-    // Enlaces
-    if (contact.links && contact.links.length > 0) {
-      doc.text('Enlaces:', 10, 100);
-      contact.links.forEach((link, i) => {
-        doc.text(`- ${link.type}: ${link.value}`, 15, 110 + i * 10);
-      });
-    }
-
-    // Notas
-    if (contact.notes && contact.notes.length > 0) {
-      doc.text('Notas:', 10, 120 + (contact.links?.length || 0) * 10);
-      contact.notes.forEach((note, i) => {
-        doc.text(`- ${note.type}: ${note.text}`, 15, 130 + (contact.links?.length || 0) * 10 + i * 10);
-      });
-    }
-
-    // Exportar PDF como base64
-    const pdfOutput = doc.output('datauristring');
-    const base64 = pdfOutput.split(',')[1];
-
-    // Guardar el archivo en el dispositivo
-    const fileName = `contacto_${contact.name.replace(/\s+/g, '_')}.pdf`;
-    const result = await Filesystem.writeFile({
-      path: fileName,
-      data: base64,
-      directory: Directory.Documents
-    });
-
-    // Compartir el archivo (opcional)
-    await Share.share({
-      title: 'Exportar contacto',
-      text: `Contacto: ${contact.name}`,
-      url: result.uri,
-      dialogTitle: 'Compartir PDF'
-    });
-  }
-} 
+}
