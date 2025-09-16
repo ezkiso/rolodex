@@ -8,9 +8,6 @@ import {
   IonTitle, 
   IonToolbar,
   IonSearchbar,
-  IonList,
-  IonItem,
-  IonLabel,
   IonCard,
   IonCardContent,
   IonCardHeader,
@@ -21,9 +18,10 @@ import {
   IonFab,
   IonFabButton,
   IonButton,
-  IonButtons,
   AlertController,
-  ToastController
+  ToastController,
+  ModalController,
+  LoadingController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { 
@@ -38,11 +36,20 @@ import {
   create,
   trash,
   download,
-  share, shareOutline, createOutline, trashOutline, mailOutline, callOutline } from 'ionicons/icons';
+  share, 
+  shareOutline, 
+  createOutline, 
+  trashOutline, 
+  mailOutline, 
+  callOutline,
+  close
+} from 'ionicons/icons';
 import { Observable } from 'rxjs';
 import { Contact } from '../models/contact.model';
 import { ContactService } from '../services/contact.service';
 import { ContactFormComponent } from '../components/contact-form/contact-form.component';
+import { Filesystem, Directory } from '@capacitor/filesystem';
+import { Share } from '@capacitor/share';
 
 // ✅ Importar jsPDF desde el paquete instalado por npm
 import jsPDF from 'jspdf';
@@ -84,10 +91,16 @@ export class HomePage implements OnInit {
   constructor(
     private contactService: ContactService,
     private alertController: AlertController,
-    private toastController: ToastController
+    private toastController: ToastController,
+    private modalController: ModalController,
+    private loadingController: LoadingController
   ) {
     // Registrar los iconos que vamos a usar
-    addIcons({person,shareOutline,createOutline,trashOutline,mailOutline,callOutline,add,mail,call,business,search,star,starOutline,create,trash,download,share});
+    addIcons({
+      person, shareOutline, createOutline, trashOutline, mailOutline, 
+      callOutline, add, mail, call, business, search, star, starOutline, 
+      create, trash, download, share, close
+    });
     
     this.contacts$ = this.contactService.getContacts();
   }
@@ -179,8 +192,93 @@ export class HomePage implements OnInit {
     await alert.present();
   }
 
+  // Helper para convertir Blob a base64 (CORREGIDO)
+  private blobToBase64(blob: Blob): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        // Para archivos binarios como PDF, necesitamos el resultado completo
+        const dataUrl = reader.result as string;
+        resolve(dataUrl);
+      };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+  }
+
+  // Función para guardar imagen en el dispositivo
+  async saveImageToDevice(imageBlob: Blob, contactName: string) {
+    try {
+      const base64Data = await this.blobToBase64(imageBlob);
+      
+      // Eliminar el prefijo data:image/png;base64, si está presente
+      const cleanBase64 = base64Data.split(',')[1] || base64Data;
+      
+      const fileName = `rolodex_${contactName.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.png`;
+      
+      const result = await Filesystem.writeFile({
+        path: fileName,
+        data: cleanBase64,
+        directory: Directory.Documents,
+      });
+
+      console.log('Imagen guardada en:', result.uri);
+
+      // Compartir el archivo usando la URI de Filesystem
+      await Share.share({
+        title: 'Exportar Contacto',
+        text: `Contacto exportado: ${contactName}`,
+        url: result.uri,
+        dialogTitle: 'Abrir o compartir imagen',
+      });
+
+    } catch (error) {
+      console.error('Error al guardar imagen:', error);
+      throw error;
+    }
+  }
+
+  // Función para guardar PDF en el dispositivo (CORREGIDO)
+  async savePdfToDevice(pdfBlob: Blob, contactName: string) {
+    try {
+      const base64Data = await this.blobToBase64(pdfBlob);
+      
+      // Eliminar el prefijo data:application/pdf;base64, si está presente
+      const cleanBase64 = base64Data.split(',')[1] || base64Data;
+      
+      const fileName = `rolodex_${contactName.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.pdf`;
+      
+      // NO usar Encoding.UTF8 para archivos binarios como PDF
+      const result = await Filesystem.writeFile({
+        path: fileName,
+        data: cleanBase64,
+        directory: Directory.Documents,
+        // No especificar encoding para archivos binarios
+      });
+
+      console.log('PDF guardado en:', result.uri);
+
+      // Compartir el archivo usando la URI de Filesystem
+      await Share.share({
+        title: 'Exportar Contacto',
+        text: `Contacto exportado: ${contactName}`,
+        url: result.uri,
+        dialogTitle: 'Abrir o compartir PDF',
+      });
+
+    } catch (error) {
+      console.error('Error al guardar PDF:', error);
+      throw error;
+    }
+  }
+
   // Función para exportar contacto como imagen
   async exportContactAsImage(contact: Contact) {
+    const loading = await this.loadingController.create({
+      message: 'Generando imagen...',
+    });
+    await loading.present();
+
     try {
       // Crear un canvas HTML para generar la imagen
       const canvas = document.createElement('canvas');
@@ -254,30 +352,37 @@ export class HomePage implements OnInit {
       ctx.fillStyle = '#666666';
       ctx.fillText(`Creado: ${this.formatDate(contact.dateCreated)}`, 20, yPosition);
 
-      // Convertir canvas a imagen y descargar
-      canvas.toBlob((blob) => {
-        if (blob) {
-          const url = URL.createObjectURL(blob);
-          const link = document.createElement('a');
-          link.href = url;
-          link.download = `${contact.name.replace(/\s+/g, '_')}_contacto.png`;
-          document.body.appendChild(link);
-          link.click();
-          document.body.removeChild(link);
-          URL.revokeObjectURL(url);
-        }
-      }, 'image/png');
-
-      const toast = await this.toastController.create({
-        message: 'Contacto exportado como imagen',
-        duration: 2000,
-        color: 'success',
-        position: 'top'
+      // Convertir canvas a blob y guardar usando Capacitor
+      return new Promise<void>((resolve, reject) => {
+        canvas.toBlob(async (blob) => {
+          if (blob) {
+            try {
+              await this.saveImageToDevice(blob, contact.name);
+              
+              const toast = await this.toastController.create({
+                message: 'Contacto exportado como imagen',
+                duration: 2000,
+                color: 'success',
+                position: 'top'
+              });
+              toast.present();
+              resolve();
+            } catch (error) {
+              console.error('Error al guardar imagen:', error);
+              reject(error);
+            } finally {
+              await loading.dismiss();
+            }
+          } else {
+            reject(new Error('No se pudo generar el blob de imagen'));
+            await loading.dismiss();
+          }
+        }, 'image/png');
       });
-      toast.present();
 
     } catch (error) {
       console.error('Error al exportar como imagen:', error);
+      await loading.dismiss();
       const toast = await this.toastController.create({
         message: 'Error al exportar contacto como imagen',
         duration: 2000,
@@ -287,14 +392,15 @@ export class HomePage implements OnInit {
       toast.present();
     }
   }
-  
-  private toStringSafe(value: any): string {
-    return value === undefined || value === null ? '' : String(value);
-  }
 
   async exportContactAsPDF(contact: Contact) {
+    const loading = await this.loadingController.create({
+      message: 'Generando PDF...',
+    });
+    await loading.present();
+
     try {
-      const doc = new jsPDF();
+      const doc = new jsPDF(); 
 
       let yPosition = 40;
       const lineHeight = 8;
@@ -363,7 +469,6 @@ export class HomePage implements OnInit {
         });
       }
 
-
       // Fechas
       const dateCreatedStr = this.toStringSafe(this.formatDate(contact.dateCreated));
       const lastInteractionStr = this.toStringSafe(this.formatDate(contact.lastInteraction));
@@ -373,8 +478,9 @@ export class HomePage implements OnInit {
       yPosition += lineHeight;
       doc.text(`Última interacción: ${lastInteractionStr}`, 20, yPosition);
 
-      const fileName = `${this.toStringSafe(contact.name ?? 'contacto').replace(/\s+/g, '_')}_contacto.pdf`;
-      doc.save(fileName);
+      // Generar el PDF como blob y guardarlo usando Capacitor
+      const pdfBlob = doc.output('blob');
+      await this.savePdfToDevice(pdfBlob, contact.name);
 
       const toast = await this.toastController.create({
         message: 'Contacto exportado como PDF',
@@ -392,7 +498,13 @@ export class HomePage implements OnInit {
         position: 'top'
       });
       toast.present();
+    } finally {
+      await loading.dismiss();
     }
+  }
+
+  private toStringSafe(value: any): string {
+    return value === undefined || value === null ? '' : String(value);
   }
 
   // Función para mostrar opciones de exportación

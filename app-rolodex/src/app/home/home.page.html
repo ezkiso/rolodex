@@ -97,11 +97,17 @@
         <div class="contact-links" *ngIf="contact.email || contact.phone">
           <div class="contact-link" *ngIf="contact.email">
             <ion-icon name="mail-outline"></ion-icon>
-            <span>{{ contact.email }}</span>
+            <div class="email-text">
+              {{ contact.email }}
+            </div>
           </div>
           <div class="contact-link" *ngIf="contact.phone">
             <ion-icon name="call-outline"></ion-icon>
-            <span>{{ contact.phone }}</span>
+            <span>
+              <a href="tel:{{ contact.phone }}" class="phone-link">
+                {{ contact.phone }}
+              </a>
+            </span>
           </div>
         </div>
 
@@ -143,6 +149,7 @@
   <!-- Formulario flotante -->
   <div class="floating-form" [class.show]="showForm">
     <app-contact-form
+      *ngIf="showForm"
       [contact]="selectedContact"
       [isVisible]="showForm"
       (formClosed)="onFormClosed()"

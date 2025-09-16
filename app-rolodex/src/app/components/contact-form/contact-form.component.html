@@ -1,5 +1,3 @@
-<!-- src/app/components/contact-form/contact-form.component.html -->
-
 <ion-card class="contact-form-card">
   <ion-card-header>
     <div class="form-header">
@@ -156,40 +154,114 @@
         </p>
       </div>
 
-      <!-- Notas -->
+      <!-- Notas con sistema de recordatorios -->
       <div class="form-section">
         <div class="section-header">
           <h3>Notas</h3>
+        </div>
+
+        <!-- Formulario para agregar nueva nota -->
+        <div class="new-note-section">
+          <ion-item>
+            <ion-label position="stacked">Tipo de Nota</ion-label>
+            <ion-select [formControl]="noteTypeControl">
+              <ion-select-option value="note">Nota General</ion-select-option>
+              <ion-select-option value="meeting">Reunión</ion-select-option>
+            </ion-select>
+          </ion-item>
+
+          <ion-item>
+            <ion-label position="stacked">Contenido *</ion-label>
+            <ion-textarea 
+              [formControl]="noteTextControl"
+              placeholder="Escribe tu nota aquí..."
+              rows="3"
+              auto-grow="true">
+            </ion-textarea>
+          </ion-item>
+
+          <!-- Toggle para activar recordatorio (solo para reuniones) -->
+          <ion-item *ngIf="noteTypeControl.value === 'meeting'">
+            <ion-toggle 
+              [formControl]="enableReminderControl"
+              (ionChange)="toggleReminderFields()"
+              labelPlacement="end">
+              ⏰ Activar recordatorio
+            </ion-toggle>
+          </ion-item>
+
+          <!-- Campos para recordatorio (solo se muestran si está activado) -->
+          <div *ngIf="noteTypeControl.value === 'meeting' && showReminderFields">
+            <ion-item>
+              <ion-label position="stacked">Fecha del Recordatorio</ion-label>
+              <ion-datetime 
+                [formControl]="reminderDateControl"
+                presentation="date"
+                preferWheel="true"
+                locale="es-CL"
+                [min]="today"
+                placeholder="Seleccionar fecha">
+              </ion-datetime>
+            </ion-item>
+
+            <ion-item *ngIf="reminderDateControl.value">
+              <ion-label position="stacked">Hora del Recordatorio</ion-label>
+              <ion-datetime 
+                [formControl]="reminderTimeControl"
+                presentation="time"
+                preferWheel="true"
+                locale="es-CL"
+                minuteValues="0,15,30,45"
+                placeholder="Seleccionar hora">
+              </ion-datetime>
+            </ion-item>
+
+            <div *ngIf="reminderDateControl.value && reminderTimeControl.value" class="reminder-confirmation">
+              <p>✅ Recordatorio programado para: {{ formatReminderDate(combineDateTimePublic(reminderDateControl.value, reminderTimeControl.value).toISOString()) }}</p>
+            </div>
+          </div>
+
           <ion-button 
-            size="small" 
-            fill="outline" 
-            (click)="addNote()">
+            expand="block" 
+            (click)="addNewNote()"
+            [disabled]="noteForm.invalid"
+            color="secondary">
             <ion-icon name="add"></ion-icon>
             Agregar Nota
           </ion-button>
         </div>
 
+        <!-- Lista de notas existentes -->
         <div formArrayName="notes">
           <div 
             *ngFor="let noteControl of notes.controls; let i = index" 
             [formGroupName]="i"
-            class="note-item">
+            class="note-item"
+            [class.reminder-note]="isMeetingWithReminder(noteControl.value)">
+            
             <ion-item>
-              <ion-label position="stacked">Tipo de Nota</ion-label>
-              <ion-select formControlName="type">
-                <ion-select-option value="note">Nota General</ion-select-option>
-                <ion-select-option value="meeting">Reunión</ion-select-option>
-              </ion-select>
-            </ion-item>
-
-            <ion-item>
-              <ion-label position="stacked">Contenido *</ion-label>
-              <ion-textarea 
-                formControlName="text"
-                placeholder="Escribe tu nota aquí..."
-                rows="3"
-                auto-grow="true">
-              </ion-textarea>
+              <ion-label>
+                <h4>{{ noteControl.value.type === 'meeting' ? '📅 Reunión' : '📝 Nota' }}</h4>
+                <p>{{ noteControl.value.text }}</p>
+                
+                <!-- Mostrar recordatorio si existe -->
+                <p *ngIf="isMeetingWithReminder(noteControl.value)" 
+                   class="reminder-text">
+                  ⏰ Recordatorio: {{ formatReminderDate(noteControl.value.reminderDate) }}
+                </p>
+                
+                <p class="note-date">{{ formatReminderDate(noteControl.value.date) }}</p>
+              </ion-label>
+              
+              <!-- Botón para cancelar recordatorio -->
+              <ion-button 
+                *ngIf="noteControl.value.reminderSet"
+                fill="clear"
+                color="danger"
+                size="small"
+                (click)="cancelReminder(i)">
+                <ion-icon name="close-circle"></ion-icon>
+              </ion-button>
             </ion-item>
 
             <div class="note-actions">
@@ -206,7 +278,7 @@
         </div>
 
         <p *ngIf="notes.length === 0" class="no-items">
-          No hay notas agregadas. Haz clic en "Agregar Nota" para añadir información adicional.
+          No hay notas agregadas. Completa el formulario arriba y haz clic en "Agregar Nota".
         </p>
       </div>
 

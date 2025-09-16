@@ -1,11 +1,12 @@
-// src/app/models/contact.model.ts
-
 export interface ContactNote {
   text: string;
   date: string;
   created: string;
   type: 'note' | 'meeting';
   reminder?: boolean;
+  reminderDate?: string;       // Fecha y hora del recordatorio
+  reminderId?: string;         // ID único para el recordatorio
+  reminderSet?: boolean;       // Si el recordatorio está activo
 }
 
 export interface ContactLink {

@@ -1,8 +1,8 @@
-// src/app/components/contact-form/contact-form.component.ts
-
+import { NotificationService } from '../../services/notification.service';
 import { Component, OnInit, Input, Output, EventEmitter, SimpleChanges, OnChanges } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormArray } from '@angular/forms';
+import { FormBuilder, FormGroup, Validators, ReactiveFormsModule, FormArray, FormControl } from '@angular/forms';
+import { FormsModule } from '@angular/forms';
 import { 
   IonCard,
   IonCardContent,
@@ -16,13 +16,13 @@ import {
   IonSelect,
   IonSelectOption,
   IonIcon,
-  IonChip,
   IonGrid,
   IonRow,
   IonCol,
-  IonList,
   AlertController,
-  ToastController
+  ToastController,
+  IonDatetime,
+  IonToggle
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { 
@@ -35,7 +35,8 @@ import {
   globe,
   logoLinkedin,
   logoFacebook,
-  logoInstagram
+  logoInstagram,
+  closeCircle
 } from 'ionicons/icons';
 import { Contact, ContactLink, ContactNote } from '../../models/contact.model';
 import { ContactService } from '../../services/contact.service';
@@ -48,6 +49,7 @@ import { ContactService } from '../../services/contact.service';
   imports: [
     CommonModule,
     ReactiveFormsModule,
+    FormsModule,
     IonCard,
     IonCardContent,
     IonCardHeader,
@@ -62,7 +64,9 @@ import { ContactService } from '../../services/contact.service';
     IonIcon,
     IonGrid,
     IonRow,
-    IonCol
+    IonCol,
+    IonDatetime,
+    IonToggle
   ]
 })
 export class ContactFormComponent implements OnInit, OnChanges {
@@ -72,6 +76,7 @@ export class ContactFormComponent implements OnInit, OnChanges {
   @Output() contactSaved = new EventEmitter<Contact>();
 
   contactForm: FormGroup;
+  noteForm: FormGroup;
   priorityOptions = [
     { value: 'low', label: 'Baja' },
     { value: 'medium', label: 'Media' },
@@ -87,14 +92,16 @@ export class ContactFormComponent implements OnInit, OnChanges {
     { value: 'website', label: 'Sitio Web', icon: 'globe' }
   ];
 
+  today: string = new Date().toISOString();
+  showReminderFields: boolean = false; // Controla si mostrar campos de recordatorio
 
   constructor(
+    private notificationService: NotificationService,
     private formBuilder: FormBuilder,
     private contactService: ContactService,
     private alertController: AlertController,
     private toastController: ToastController
   ) {
-    // Registrar iconos
     addIcons({ 
       save, 
       close, 
@@ -105,15 +112,17 @@ export class ContactFormComponent implements OnInit, OnChanges {
       globe,
       logoLinkedin,
       logoFacebook,
-      logoInstagram
+      logoInstagram,
+      closeCircle
     });
 
     this.contactForm = this.initializeForm();
+    this.noteForm = this.initializeNoteForm();
   }
 
   ngOnInit() {
     this.contactForm = this.initializeForm();
-    // No pongas lógica de rellenado aquí
+    this.noteForm = this.initializeNoteForm();
   }
 
   ngOnChanges(changes: SimpleChanges) {
@@ -138,16 +147,19 @@ export class ContactFormComponent implements OnInit, OnChanges {
             value: [link.value],
             label: [link.label || '']
           })
-      );
-      const linksFA = this.formBuilder.array(linksFG);
-      this.contactForm.setControl('links', linksFA);
+        );
+        const linksFA = this.formBuilder.array(linksFG);
+        this.contactForm.setControl('links', linksFA);
       }
 
       if (c.notes && c.notes.length > 0) {
         const notesFG = c.notes.map((note: ContactNote) =>
           this.formBuilder.group({
             type: [note.type],
-            text: [note.text]
+            text: [note.text],
+            reminder: [note.reminder || false],
+            reminderDate: [note.reminderDate || ''],
+            reminderSet: [note.reminderSet || false]
           })
         );
         const notesFA = this.formBuilder.array(notesFG);
@@ -157,43 +169,50 @@ export class ContactFormComponent implements OnInit, OnChanges {
   }
 
   private initializeForm(): FormGroup {
-  return this.formBuilder.group({
-    name: ['', [Validators.required, Validators.minLength(2)]],
-    company: [''],
-    position: [''],
-    email: ['', [Validators.email]],
-    phone: [''],
-    priority: ['medium', Validators.required],
-    tags: [''],
-    links: this.formBuilder.array([]),
-    notes: this.formBuilder.array([])
-  });
+    return this.formBuilder.group({
+      name: ['', [Validators.required, Validators.minLength(2)]],
+      company: [''],
+      position: [''],
+      email: ['', [Validators.email]],
+      phone: [''],
+      priority: ['medium', Validators.required],
+      tags: [''],
+      links: this.formBuilder.array([]),
+      notes: this.formBuilder.array([])
+    });
   }
-  private loadContactData() {
-    if (this.contact) {
-      this.contactForm.patchValue({
-        name: this.contact.name,
-        company: this.contact.company || '',
-        position: this.contact.position || '',
-        email: this.contact.email || '',
-        phone: this.contact.phone || '',
-        priority: this.contact.priority,
-        tags: this.contact.tags.join(', ')
-      });
 
-      // Cargar enlaces
-      this.contact.links.forEach(link => {
-        this.addLink(link);
-      });
+  private initializeNoteForm(): FormGroup {
+    return this.formBuilder.group({
+      type: ['note'],
+      text: ['', Validators.required],
+      enableReminder: [false], // Toggle para activar recordatorio
+      reminderDate: [''],
+      reminderTime: ['']
+    });
+  }
 
-      // Cargar notas
-      this.contact.notes.forEach(note => {
-        this.addNote(note);
-      });
-    }
-    }
+  // Getters para acceder a los controles de forma segura
+  get noteTypeControl(): FormControl {
+    return this.noteForm.get('type') as FormControl;
+  }
 
-  // Getters para FormArrays
+  get noteTextControl(): FormControl {
+    return this.noteForm.get('text') as FormControl;
+  }
+
+  get enableReminderControl(): FormControl {
+    return this.noteForm.get('enableReminder') as FormControl;
+  }
+
+  get reminderDateControl(): FormControl {
+    return this.noteForm.get('reminderDate') as FormControl;
+  }
+
+  get reminderTimeControl(): FormControl {
+    return this.noteForm.get('reminderTime') as FormControl;
+  }
+
   get links() {
     return this.contactForm.get('links') as FormArray;
   }
@@ -202,7 +221,17 @@ export class ContactFormComponent implements OnInit, OnChanges {
     return this.contactForm.get('notes') as FormArray;
   }
 
-  // Funciones para manejar enlaces
+  // Toggle para mostrar/ocultar campos de recordatorio
+  toggleReminderFields() {
+    this.showReminderFields = this.enableReminderControl.value;
+    
+    // Si se desactiva el recordatorio, limpiar los campos
+    if (!this.showReminderFields) {
+      this.reminderDateControl.reset();
+      this.reminderTimeControl.reset();
+    }
+  }
+
   addLink(existingLink?: ContactLink) {
     const linkGroup = this.formBuilder.group({
       type: [existingLink?.type || 'email', Validators.required],
@@ -216,12 +245,13 @@ export class ContactFormComponent implements OnInit, OnChanges {
     this.links.removeAt(index);
   }
 
-  // Funciones para manejar notas
   addNote(existingNote?: ContactNote) {
     const noteGroup = this.formBuilder.group({
       text: [existingNote?.text || '', Validators.required],
       type: [existingNote?.type || 'note', Validators.required],
-      reminder: [existingNote?.reminder || false]
+      reminder: [existingNote?.reminder || false],
+      reminderDate: [existingNote?.reminderDate || ''],
+      reminderSet: [existingNote?.reminderSet || false]
     });
     this.notes.push(noteGroup);
   }
@@ -230,9 +260,146 @@ export class ContactFormComponent implements OnInit, OnChanges {
     this.notes.removeAt(index);
   }
 
-  // Validar enlaces según su tipo
+  // Método público para usar en el template
+  combineDateTimePublic(date: string, time: string): Date {
+    if (!date || !time) return new Date();
+    
+    const dateObj = new Date(date);
+    const timeObj = new Date(time);
+    
+    dateObj.setHours(timeObj.getHours());
+    dateObj.setMinutes(timeObj.getMinutes());
+    dateObj.setSeconds(0);
+    
+    return dateObj;
+  }
+
+  async addNewNote() {
+    if (this.noteForm.invalid) {
+      const toast = await this.toastController.create({
+        message: 'Por favor escribe una nota primero',
+        duration: 2000,
+        color: 'warning'
+      });
+      toast.present();
+      return;
+    }
+
+    const noteValue = this.noteForm.value;
+    const noteId = Date.now().toString();
+    let reminderDateTime = '';
+
+    // Solo programar recordatorio si está activado y tiene fecha/hora
+    const shouldSetReminder = noteValue.enableReminder && 
+                             noteValue.reminderDate && 
+                             noteValue.reminderTime;
+
+    if (shouldSetReminder) {
+      const reminderDate = this.combineDateTimePublic(noteValue.reminderDate, noteValue.reminderTime);
+      
+      if (reminderDate <= new Date()) {
+        const toast = await this.toastController.create({
+          message: 'Por favor selecciona una fecha y hora futura',
+          duration: 3000,
+          color: 'danger'
+        });
+        toast.present();
+        return;
+      }
+
+      reminderDateTime = reminderDate.toISOString();
+
+      const success = await this.notificationService.scheduleReunionReminder(
+        this.contact?.name || 'Contacto',
+        noteValue.text,
+        reminderDate,
+        noteId
+      );
+
+      if (!success) {
+        const toast = await this.toastController.create({
+          message: 'No se concedieron permisos para notificaciones',
+          duration: 3000,
+          color: 'warning'
+        });
+        toast.present();
+      }
+    }
+
+    const newNote: ContactNote = {
+      text: noteValue.text,
+      date: new Date().toISOString(),
+      created: noteId,
+      type: noteValue.type,
+      reminder: shouldSetReminder,
+      reminderDate: reminderDateTime,
+      reminderId: shouldSetReminder ? noteId : undefined,
+      reminderSet: shouldSetReminder
+    };
+
+    const noteGroup = this.formBuilder.group({
+      text: [newNote.text, Validators.required],
+      type: [newNote.type, Validators.required],
+      reminder: [newNote.reminder],
+      reminderDate: [newNote.reminderDate],
+      reminderSet: [newNote.reminderSet]
+    });
+    this.notes.push(noteGroup);
+
+    // Resetear formulario de nota
+    this.noteForm.reset({
+      type: 'note',
+      text: '',
+      enableReminder: false,
+      reminderDate: '',
+      reminderTime: ''
+    });
+    this.showReminderFields = false;
+
+    const toast = await this.toastController.create({
+      message: 'Nota agregada correctamente' + (newNote.reminder ? ' con recordatorio' : ''),
+      duration: 2000,
+      color: 'success'
+    });
+    toast.present();
+  }
+
+  async cancelReminder(noteIndex: number) {
+    const noteGroup = this.notes.at(noteIndex);
+    const noteValue = noteGroup.value;
+    
+    if (noteValue.reminderId && noteValue.reminderSet) {
+      await this.notificationService.cancelReunionReminder(noteValue.reminderId);
+      
+      noteGroup.patchValue({
+        reminderSet: false,
+        reminder: false,
+        reminderDate: ''
+      });
+
+      const toast = await this.toastController.create({
+        message: 'Recordatorio cancelado',
+        duration: 2000,
+        color: 'success'
+      });
+      toast.present();
+    }
+  }
+
+  formatReminderDate(dateString: string): string {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return date.toLocaleString('es-CL', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  }
+
   validateLink(type: string, value: string): boolean {
-    if (!value) return true; // Enlaces vacíos son válidos
+    if (!value) return true;
     
     switch (type) {
       case 'email':
@@ -252,13 +419,11 @@ export class ContactFormComponent implements OnInit, OnChanges {
     }
   }
 
-  // Función para obtener el label de un tipo de enlace
   getLinkLabel(type: string): string {
     const found = this.linkTypes.find(lt => lt.value === type);
     return found ? found.label : 'enlace';
   }
 
-  // Procesar tags (convertir string a array)
   private processTags(tagsString: string): string[] {
     if (!tagsString) return [];
     return tagsString
@@ -267,10 +432,8 @@ export class ContactFormComponent implements OnInit, OnChanges {
       .filter(tag => tag.length > 0);
   }
 
-  // Guardar contacto
   async saveContact() {
     if (this.contactForm.valid) {
-      // Validar enlaces
       const linksValid = this.links.controls.every(linkControl => {
         const link = linkControl.value;
         return this.validateLink(link.type, link.value);
@@ -289,30 +452,33 @@ export class ContactFormComponent implements OnInit, OnChanges {
 
       const formValue = this.contactForm.value;
       const contactData = {
-        name: formValue.name,
-        company: formValue.company || undefined,
-        position: formValue.position || undefined,
-        email: formValue.email || undefined,
-        phone: formValue.phone || undefined,
-        priority: formValue.priority,
+        name: formValue.name || '',
+        company: formValue.company || '',
+        position: formValue.position || '',
+        email: formValue.email || '',
+        phone: formValue.phone || '',
+        priority: formValue.priority || 'medium',
         tags: this.processTags(formValue.tags),
         links: formValue.links || [],
         notes: formValue.notes.map((note: any) => ({
-          ...note,
+          text: note.text || '',
+          type: note.type || 'note',
           date: new Date().toISOString(),
-          created: new Date().toISOString()
-        })) || [],
+          created: note.created || new Date().toISOString(),
+          reminder: note.reminder || false,
+          reminderDate: note.reminderDate || '',
+          reminderSet: note.reminderSet || false,
+          reminderId: note.reminderId || ''
+        })),
         lastInteraction: new Date().toISOString()
-      };
+      } as Omit<Contact, 'id' | 'dateCreated'>;
 
       let savedContact: Contact;
 
       if (this.contact) {
-        // Actualizar contacto existente
         this.contactService.updateContact(this.contact.id, contactData);
-        savedContact = { ...this.contact, ...contactData };
+        savedContact = { ...this.contact, ...contactData } as Contact;
       } else {
-        // Crear nuevo contacto
         savedContact = this.contactService.addContact(contactData);
       }
 
@@ -337,15 +503,21 @@ export class ContactFormComponent implements OnInit, OnChanges {
     }
   }
 
-  // Cerrar formulario
   closeForm() {
     this.contactForm.reset();
+    this.noteForm.reset({
+      type: 'note',
+      text: '',
+      enableReminder: false,
+      reminderDate: '',
+      reminderTime: ''
+    });
+    this.showReminderFields = false;
     this.links.clear();
     this.notes.clear();
     this.formClosed.emit();
   }
 
-  // Confirmar cierre si hay cambios
   async confirmClose() {
     if (this.contactForm.dirty) {
       const alert = await this.alertController.create({
@@ -368,9 +540,12 @@ export class ContactFormComponent implements OnInit, OnChanges {
     }
   }
 
-  // Obtener icono para tipo de enlace
   getLinkIcon(type: string): string {
     const linkType = this.linkTypes.find(lt => lt.value === type);
     return linkType ? linkType.icon : 'globe';
+  }
+
+  isMeetingWithReminder(note: any): boolean {
+    return note.type === 'meeting' && note.reminderSet && note.reminderDate;
   }
 }

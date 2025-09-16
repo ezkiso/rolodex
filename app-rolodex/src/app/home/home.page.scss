@@ -284,6 +284,19 @@
       }
     }
   }
+  .email-text {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  cursor: text !important;
+  }
+
+  .phone-link {
+  color: var(--ion-color-primary);
+  text-decoration: underline;
+  }
+
   
   .share-button-container {
     top: 6px;
@@ -302,4 +315,10 @@
       }
     }
   }
+}
+ion-label, ion-text, ion-item, ion-note, p, span, div {
+  user-select: text !important;
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
 }

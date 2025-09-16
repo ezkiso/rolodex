@@ -114,6 +114,113 @@ ion-item {
   }
 }
 
+/* ===== ESTILOS NUEVOS PARA RECORDATORIOS ===== */
+
+/* Sección de nueva nota con recordatorio */
+.new-note-section {
+  background: var(--ion-color-light);
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 16px;
+  border: 2px dashed var(--ion-color-primary-tint);
+  
+  ion-item {
+    --background: transparent;
+    --border-color: var(--ion-color-primary-tint);
+  }
+}
+
+/* Nota con recordatorio activo */
+.reminder-note {
+  border-left: 4px solid var(--ion-color-warning) !important;
+  background: linear-gradient(135deg, #fffaf0 0%, #fff5e6 100%) !important;
+  position: relative;
+  overflow: hidden;
+  
+  &::before {
+    content: '⏰';
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    font-size: 16px;
+    background: var(--ion-color-warning);
+    color: white;
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+
+/* Texto del recordatorio */
+.reminder-text {
+  color: var(--ion-color-warning);
+  font-size: 14px;
+  font-weight: 600;
+  margin: 8px 0 4px 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  
+  &::before {
+    content: '⏰';
+    font-size: 16px;
+  }
+}
+
+/* Fecha de la nota */
+.note-date {
+  color: var(--ion-color-medium);
+  font-size: 12px;
+  margin: 4px 0 0 0;
+}
+
+/* Toggle de recordatorio */
+ion-toggle {
+  --background: var(--ion-color-light-shade);
+  --background-checked: var(--ion-color-warning);
+  --handle-background: var(--ion-color-warning-shade);
+  --handle-background-checked: var(--ion-color-warning-contrast);
+}
+
+/* DateTime picker para recordatorio */
+ion-datetime {
+  border-radius: 8px;
+  background: white;
+  margin-top: 8px;
+  
+  &::part(time-button) {
+    color: var(--ion-color-warning);
+  }
+  
+  &::part(calendar-day active) {
+    background: var(--ion-color-warning);
+    color: white;
+  }
+}
+
+/* Botón para cancelar recordatorio */
+ion-button[color="danger"] {
+  --background: transparent;
+  --color: var(--ion-color-danger);
+  --border-color: var(--ion-color-danger);
+  --background-hover: var(--ion-color-danger-tint);
+  --color-hover: var(--ion-color-danger-shade);
+  
+  ion-icon {
+    font-size: 18px;
+  }
+}
+
+/* Estado de hover para notas con recordatorio */
+.reminder-note:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 16px rgba(255, 145, 0, 0.2);
+  border-left: 4px solid var(--ion-color-warning-shade) !important;
+}
+
 /* Mensaje cuando no hay items */
 .no-items {
   text-align: center;
@@ -177,6 +284,21 @@ ion-item {
       align-self: flex-end;
     }
   }
+  
+  /* Ajustes responsive para recordatorios */
+  .reminder-note {
+    &::before {
+      top: 4px;
+      right: 4px;
+      width: 20px;
+      height: 20px;
+      font-size: 14px;
+    }
+  }
+  
+  .new-note-section {
+    padding: 12px;
+  }
 }
 
 /* Animaciones suaves */
@@ -187,6 +309,17 @@ ion-item {
     transform: translateY(-1px);
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   }
+}
+
+/* Animación específica para recordatorios */
+@keyframes pulse-reminder {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+}
+
+.reminder-note {
+  animation: pulse-reminder 2s ease-in-out;
 }
 
 /* Estilos para el scroll del formulario */
@@ -206,4 +339,67 @@ ion-item {
 
 .contact-form-card::-webkit-scrollbar-thumb:hover {
   background: var(--ion-color-dark);
+}
+
+/* Mejoras visuales para el estado de focus */
+ion-toggle:focus-within {
+  outline: 2px solid var(--ion-color-warning);
+  outline-offset: 2px;
+}
+
+ion-datetime:focus-within {
+  outline: 2px solid var(--ion-color-primary);
+  outline-offset: 2px;
+}
+/* Agrega estos estilos al final de tu CSS */
+.datetime-section {
+  background: white;
+  border-radius: 8px;
+  padding: 12px;
+  margin: 8px 0;
+  border: 1px solid var(--ion-color-light-shade);
+}
+
+.reminder-confirmation {
+  background: var(--ion-color-warning-tint);
+  border-radius: 8px;
+  padding: 12px;
+  margin: 8px 0;
+  border-left: 4px solid var(--ion-color-warning);
+  
+  p {
+    margin: 0;
+    color: var(--ion-color-warning-contrast);
+    font-weight: 500;
+  }
+}
+
+/* Mejora la visualización de los datetime pickers */
+ion-datetime {
+  --background: white;
+  --border-radius: 8px;
+  --padding: 12px;
+  
+  &::part(time-button) {
+    color: var(--ion-color-warning);
+    font-weight: 600;
+  }
+  
+  &::part(calendar-day active) {
+    background: var(--ion-color-warning);
+    color: white;
+  }
+}
+
+/* Botón de programar alarma */
+ion-button[color="warning"] {
+  --background: var(--ion-color-warning);
+  --background-hover: var(--ion-color-warning-shade);
+  --color: white;
+  --color-hover: white;
+  margin: 12px 0;
+  
+  &::part(native) {
+    font-weight: 600;
+  }
 }
