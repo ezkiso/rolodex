@@ -2,6 +2,17 @@ import { Component, Input } from '@angular/core';
 import { ContactLink } from '../../models/contact.model';
 import { CommonModule } from '@angular/common';
 import { IonButton, IonIcon } from '@ionic/angular/standalone';
+import { addIcons } from 'ionicons';  
+
+import {
+  logoFacebook,
+  logoInstagram,
+  logoLinkedin,
+  mail,
+  call,
+  globe,
+  link
+} from 'ionicons/icons';
 
 @Component({
   selector: 'app-social-links',
@@ -14,9 +25,22 @@ import { IonButton, IonIcon } from '@ionic/angular/standalone';
     IonIcon            
   ]
 })
+
 export class SocialLinksComponent {
   @Input() links: ContactLink[] = [];
-
+  
+  constructor() {
+    // AGREGAR ESTE CONSTRUCTOR:
+    addIcons({
+      logoFacebook,
+      logoInstagram,
+      logoLinkedin,
+      mail,
+      call,
+      globe,
+      link
+    });
+  }
   getIcon(type: string): string {
     switch (type) {
       case 'facebook': return 'logo-facebook';

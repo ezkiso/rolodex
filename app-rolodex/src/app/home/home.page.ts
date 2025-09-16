@@ -18,10 +18,11 @@ import {
   IonFab,
   IonFabButton,
   IonButton,
+  IonButtons,
   AlertController,
   ToastController,
   ModalController,
-  LoadingController
+  LoadingController,
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { 
@@ -37,11 +38,17 @@ import {
   trash,
   download,
   share, 
-  shareOutline, 
+  shareOutline,
+  sync,
+  phonePortrait,
   createOutline, 
   trashOutline, 
   mailOutline, 
   callOutline,
+  globe,
+  logoLinkedin,
+  logoFacebook,
+  logoInstagram,
   close
 } from 'ionicons/icons';
 import { Observable } from 'rxjs';
@@ -50,8 +57,7 @@ import { ContactService } from '../services/contact.service';
 import { ContactFormComponent } from '../components/contact-form/contact-form.component';
 import { Filesystem, Directory } from '@capacitor/filesystem';
 import { Share } from '@capacitor/share';
-
-// ✅ Importar jsPDF desde el paquete instalado por npm
+import { ContactsSyncService } from '../services/contacts-sync.service'; 
 import jsPDF from 'jspdf';
 
 @Component({
@@ -77,6 +83,7 @@ import jsPDF from 'jspdf';
     IonFab,
     IonFabButton,
     IonButton,
+    IonButtons,
     ContactFormComponent,
     SocialLinksComponent
   ],
@@ -93,23 +100,30 @@ export class HomePage implements OnInit {
     private alertController: AlertController,
     private toastController: ToastController,
     private modalController: ModalController,
+    private contactsSyncService: ContactsSyncService,
     private loadingController: LoadingController
   ) {
     // Registrar los iconos que vamos a usar
     addIcons({
       person, shareOutline, createOutline, trashOutline, mailOutline, 
       callOutline, add, mail, call, business, search, star, starOutline, 
-      create, trash, download, share, close
+      create, trash, download, share, globe, logoLinkedin, logoFacebook, 
+      logoInstagram, sync, phonePortrait, close
     });
     
     this.contacts$ = this.contactService.getContacts();
   }
 
-  ngOnInit() {
+  async ngOnInit() {
     // Suscribirse a los cambios en los contactos
     this.contacts$.subscribe(contacts => {
       this.filteredContacts = contacts;
     });
+
+    // Verificar permisos de contactos al iniciar
+    setTimeout(() => {
+      this.contactsSyncService.checkAndRequestPermissionsOnStartup();
+    }, 2000); // Esperar 2 segundos para que la app cargue completamente
   }
 
   // Función para buscar contactos
@@ -157,7 +171,6 @@ export class HomePage implements OnInit {
     this.selectedContact = contact;
     this.showForm = true;
   }
-  
 
   // Función para eliminar contacto
   async deleteContact(contact: Contact) {
@@ -192,12 +205,11 @@ export class HomePage implements OnInit {
     await alert.present();
   }
 
-  // Helper para convertir Blob a base64 (CORREGIDO)
+  // Helper para convertir Blob a base64
   private blobToBase64(blob: Blob): Promise<string> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onloadend = () => {
-        // Para archivos binarios como PDF, necesitamos el resultado completo
         const dataUrl = reader.result as string;
         resolve(dataUrl);
       };
@@ -210,10 +222,7 @@ export class HomePage implements OnInit {
   async saveImageToDevice(imageBlob: Blob, contactName: string) {
     try {
       const base64Data = await this.blobToBase64(imageBlob);
-      
-      // Eliminar el prefijo data:image/png;base64, si está presente
       const cleanBase64 = base64Data.split(',')[1] || base64Data;
-      
       const fileName = `rolodex_${contactName.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.png`;
       
       const result = await Filesystem.writeFile({
@@ -224,7 +233,6 @@ export class HomePage implements OnInit {
 
       console.log('Imagen guardada en:', result.uri);
 
-      // Compartir el archivo usando la URI de Filesystem
       await Share.share({
         title: 'Exportar Contacto',
         text: `Contacto exportado: ${contactName}`,
@@ -238,27 +246,21 @@ export class HomePage implements OnInit {
     }
   }
 
-  // Función para guardar PDF en el dispositivo (CORREGIDO)
+  // Función para guardar PDF en el dispositivo
   async savePdfToDevice(pdfBlob: Blob, contactName: string) {
     try {
       const base64Data = await this.blobToBase64(pdfBlob);
-      
-      // Eliminar el prefijo data:application/pdf;base64, si está presente
       const cleanBase64 = base64Data.split(',')[1] || base64Data;
-      
       const fileName = `rolodex_${contactName.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}.pdf`;
       
-      // NO usar Encoding.UTF8 para archivos binarios como PDF
       const result = await Filesystem.writeFile({
         path: fileName,
         data: cleanBase64,
         directory: Directory.Documents,
-        // No especificar encoding para archivos binarios
       });
 
       console.log('PDF guardado en:', result.uri);
 
-      // Compartir el archivo usando la URI de Filesystem
       await Share.share({
         title: 'Exportar Contacto',
         text: `Contacto exportado: ${contactName}`,
@@ -280,7 +282,6 @@ export class HomePage implements OnInit {
     await loading.present();
 
     try {
-      // Crear un canvas HTML para generar la imagen
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       
@@ -288,29 +289,22 @@ export class HomePage implements OnInit {
         throw new Error('No se pudo crear el contexto del canvas');
       }
 
-      // Configurar el tamaño del canvas
       canvas.width = 400;
       canvas.height = 600;
 
-      // Fondo blanco
       ctx.fillStyle = '#ffffff';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      // Configurar fuente
       ctx.fillStyle = '#000000';
       ctx.font = 'bold 24px Arial';
-      
-      // Título
       ctx.fillText('ROLODEX - CONTACTO', 20, 40);
       
-      // Línea separadora
       ctx.beginPath();
       ctx.moveTo(20, 60);
       ctx.lineTo(380, 60);
       ctx.strokeStyle = '#cccccc';
       ctx.stroke();
 
-      // Información del contacto
       let yPosition = 100;
       const lineHeight = 30;
       
@@ -347,12 +341,10 @@ export class HomePage implements OnInit {
         yPosition += lineHeight + 10;
       }
 
-      // Fecha de creación
       ctx.font = '12px Arial';
       ctx.fillStyle = '#666666';
       ctx.fillText(`Creado: ${this.formatDate(contact.dateCreated)}`, 20, yPosition);
 
-      // Convertir canvas a blob y guardar usando Capacitor
       return new Promise<void>((resolve, reject) => {
         canvas.toBlob(async (blob) => {
           if (blob) {
@@ -430,7 +422,6 @@ export class HomePage implements OnInit {
         yPosition += lineHeight;
       }
 
-      // Esta función ya devuelve string siempre
       doc.text(`Prioridad: ${this.getPriorityText(contact.priority)}`, 20, yPosition);
       yPosition += lineHeight + 5;
 
@@ -469,7 +460,6 @@ export class HomePage implements OnInit {
         });
       }
 
-      // Fechas
       const dateCreatedStr = this.toStringSafe(this.formatDate(contact.dateCreated));
       const lastInteractionStr = this.toStringSafe(this.formatDate(contact.lastInteraction));
       doc.setFontSize(10);
@@ -478,7 +468,6 @@ export class HomePage implements OnInit {
       yPosition += lineHeight;
       doc.text(`Última interacción: ${lastInteractionStr}`, 20, yPosition);
 
-      // Generar el PDF como blob y guardarlo usando Capacitor
       const pdfBlob = doc.output('blob');
       await this.savePdfToDevice(pdfBlob, contact.name);
 
@@ -561,6 +550,160 @@ export class HomePage implements OnInit {
   onContactSaved(contact: Contact) {
     this.showForm = false;
     this.selectedContact = null;
-    // Los contactos se actualizan automáticamente a través del Observable
+  }
+
+  // ========================================
+  // NUEVAS FUNCIONES DE SINCRONIZACIÓN:
+  // ========================================
+
+  // Sincronizar contactos del dispositivo
+  async syncDeviceContacts() {
+    await this.contactsSyncService.showSyncConfirmation();
+  }
+
+  // Abrir menú de opciones
+  async openOptionsMenu() {
+    const alert = await this.alertController.create({
+      header: 'Opciones',
+      buttons: [
+        {
+          text: '📱 Sincronizar con contactos del teléfono',
+          handler: () => this.syncDeviceContacts()
+        },
+        {
+          text: '📊 Exportar todos los contactos',
+          handler: () => this.exportAllContacts()
+        },
+        {
+          text: '📈 Estadísticas',
+          handler: () => this.showStatistics()
+        },
+        {
+          text: 'Cancelar',
+          role: 'cancel'
+        }
+      ]
+    });
+
+    await alert.present();
+  }
+
+  // Exportar todos los contactos
+  async exportAllContacts() {
+    const contacts = this.filteredContacts;
+    
+    if (contacts.length === 0) {
+      const toast = await this.toastController.create({
+        message: 'No hay contactos para exportar',
+        duration: 2000,
+        color: 'warning',
+        position: 'top'
+      });
+      toast.present();
+      return;
+    }
+
+    const loading = await this.loadingController.create({
+      message: 'Exportando contactos...',
+      spinner: 'crescent'
+    });
+    await loading.present();
+
+    try {
+      const contactsData = contacts.map(contact => ({
+        Nombre: contact.name,
+        Empresa: contact.company || '',
+        Cargo: contact.position || '',
+        Email: contact.email || '',
+        Teléfono: contact.phone || '',
+        Prioridad: this.getPriorityText(contact.priority),
+        Tags: contact.tags.join(', '),
+        'Fecha Creación': this.formatDate(contact.dateCreated),
+        'Última Interacción': this.formatDate(contact.lastInteraction)
+      }));
+
+      const csvContent = this.convertToCSV(contactsData);
+      this.downloadFile(csvContent, `rolodex_contactos_${new Date().toISOString().split('T')[0]}.csv`, 'text/csv');
+
+      await loading.dismiss();
+      
+      const toast = await this.toastController.create({
+        message: `${contacts.length} contactos exportados exitosamente`,
+        duration: 3000,
+        color: 'success',
+        position: 'top'
+      });
+      toast.present();
+    } catch (error) {
+      await loading.dismiss();
+      const toast = await this.toastController.create({
+        message: 'Error al exportar contactos',
+        duration: 2000,
+        color: 'danger',
+        position: 'top'
+      });
+      toast.present();
+    }
+  }
+
+  // Mostrar estadísticas
+  async showStatistics() {
+    const contacts = this.filteredContacts;
+    const highPriority = contacts.filter(c => c.priority === 'high').length;
+    const mediumPriority = contacts.filter(c => c.priority === 'medium').length;
+    const lowPriority = contacts.filter(c => c.priority === 'low').length;
+    const withCompany = contacts.filter(c => c.company?.trim()).length;
+    const withEmail = contacts.filter(c => c.email?.trim()).length;
+    const withPhone = contacts.filter(c => c.phone?.trim()).length;
+    const withNotes = contacts.filter(c => c.notes.length > 0).length;
+
+    const alert = await this.alertController.create({
+      header: 'Estadísticas de Contactos',
+      message: `
+        <div style="text-align: left;">
+          <strong>Total de contactos:</strong> ${contacts.length}<br><br>
+          
+          <strong>Por prioridad:</strong><br>
+          🔴 Alta: ${highPriority}<br>
+          🟡 Media: ${mediumPriority}<br>
+          🟢 Baja: ${lowPriority}<br><br>
+          
+          <strong>Información completada:</strong><br>
+          🏢 Con empresa: ${withCompany}<br>
+          ✉️ Con email: ${withEmail}<br>
+          📞 Con teléfono: ${withPhone}<br>
+          📝 Con notas: ${withNotes}
+        </div>
+      `,
+      buttons: ['Cerrar']
+    });
+
+    await alert.present();
+  }
+
+  // Funciones auxiliares para exportación
+  private convertToCSV(data: any[]): string {
+    if (data.length === 0) return '';
+    
+    const headers = Object.keys(data[0]).join(',');
+    const rows = data.map(row => 
+      Object.values(row).map(value => 
+        `"${String(value).replace(/"/g, '""')}"`
+      ).join(',')
+    );
+    
+    return [headers, ...rows].join('\n');
+  }
+
+  private downloadFile(content: string, fileName: string, contentType: string): void {
+    const blob = new Blob([content], { type: contentType });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = fileName;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 }
