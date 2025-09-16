@@ -18,7 +18,6 @@ import {
   IonFab,
   IonFabButton,
   IonButton,
-  IonButtons,
   AlertController,
   ToastController,
   ModalController,
@@ -83,7 +82,6 @@ import jsPDF from 'jspdf';
     IonFab,
     IonFabButton,
     IonButton,
-    IonButtons,
     ContactFormComponent,
     SocialLinksComponent
   ],
