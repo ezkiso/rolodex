@@ -75,8 +75,9 @@ export class ContactFormComponent implements OnInit, OnChanges {
   @Output() formClosed = new EventEmitter<void>();
   @Output() contactSaved = new EventEmitter<Contact>();
 
-  contactForm: FormGroup;
-  noteForm: FormGroup;
+  contactForm!: FormGroup;
+  noteForm!: FormGroup;
+  
   priorityOptions = [
     { value: 'low', label: 'Baja' },
     { value: 'medium', label: 'Media' },
@@ -93,7 +94,7 @@ export class ContactFormComponent implements OnInit, OnChanges {
   ];
 
   today: string = new Date().toISOString();
-  showReminderFields: boolean = false; // Controla si mostrar campos de recordatorio
+  showReminderFields: boolean = false;
 
   constructor(
     private notificationService: NotificationService,
@@ -115,56 +116,75 @@ export class ContactFormComponent implements OnInit, OnChanges {
       logoInstagram,
       closeCircle
     });
-
-    this.contactForm = this.initializeForm();
-    this.noteForm = this.initializeNoteForm();
   }
 
   ngOnInit() {
-    this.contactForm = this.initializeForm();
-    this.noteForm = this.initializeNoteForm();
+    // Solo inicializar si no hay contacto (modo creación)
+    if (!this.contact) {
+      this.contactForm = this.initializeForm();
+      this.noteForm = this.initializeNoteForm();
+    }
   }
 
   ngOnChanges(changes: SimpleChanges) {
-    if (changes['contact'] && changes['contact'].currentValue) {
+    // Este método se ejecuta cuando cambia el @Input() contact
+    if (changes['contact']) {
+      const currentContact = changes['contact'].currentValue;
+      
+      // Inicializar formulario vacío
       this.contactForm = this.initializeForm();
+      this.noteForm = this.initializeNoteForm();
+      
+      // Si hay un contacto, cargar sus datos (modo edición)
+      if (currentContact) {
+        this.loadContactData(currentContact);
+      }
+    }
+  }
 
-      const c = changes['contact'].currentValue;
-      this.contactForm.patchValue({
-        name: c.name,
-        company: c.company,
-        position: c.position,
-        email: c.email,
-        phone: c.phone,
-        priority: c.priority,
-        tags: c.tags ? c.tags.join(', ') : '',
+  private loadContactData(c: Contact) {
+    // Cargar datos básicos
+    this.contactForm.patchValue({
+      name: c.name || '',
+      company: c.company || '',
+      position: c.position || '',
+      email: c.email || '',
+      phone: c.phone || '',
+      priority: c.priority || 'medium',
+      tags: c.tags ? c.tags.join(', ') : '',
+    });
+
+    // Cargar enlaces
+    if (c.links && c.links.length > 0) {
+      const linksArray = this.contactForm.get('links') as FormArray;
+      linksArray.clear(); // Limpiar primero
+      
+      c.links.forEach((link: ContactLink) => {
+        const linkGroup = this.formBuilder.group({
+          type: [link.type || 'email'],
+          value: [link.value || ''],
+          label: [link.label || '']
+        });
+        linksArray.push(linkGroup);
       });
+    }
 
-      if (c.links && c.links.length > 0) {
-        const linksFG = c.links.map((link: ContactLink) =>
-          this.formBuilder.group({
-            type: [link.type],
-            value: [link.value],
-            label: [link.label || '']
-          })
-        );
-        const linksFA = this.formBuilder.array(linksFG);
-        this.contactForm.setControl('links', linksFA);
-      }
-
-      if (c.notes && c.notes.length > 0) {
-        const notesFG = c.notes.map((note: ContactNote) =>
-          this.formBuilder.group({
-            type: [note.type],
-            text: [note.text],
-            reminder: [note.reminder || false],
-            reminderDate: [note.reminderDate || ''],
-            reminderSet: [note.reminderSet || false]
-          })
-        );
-        const notesFA = this.formBuilder.array(notesFG);
-        this.contactForm.setControl('notes', notesFA);
-      }
+    // Cargar notas
+    if (c.notes && c.notes.length > 0) {
+      const notesArray = this.contactForm.get('notes') as FormArray;
+      notesArray.clear(); // Limpiar primero
+      
+      c.notes.forEach((note: ContactNote) => {
+        const noteGroup = this.formBuilder.group({
+          type: [note.type || 'note'],
+          text: [note.text || ''],
+          reminder: [note.reminder || false],
+          reminderDate: [note.reminderDate || ''],
+          reminderSet: [note.reminderSet || false],
+          reminderId: [note.reminderId || '']
+        });
+        notesArray.push(noteGroup);
+      });
     }
   }
 
@@ -186,13 +206,13 @@ export class ContactFormComponent implements OnInit, OnChanges {
     return this.formBuilder.group({
       type: ['note'],
       text: ['', Validators.required],
-      enableReminder: [false], // Toggle para activar recordatorio
+      enableReminder: [false],
       reminderDate: [''],
       reminderTime: ['']
     });
   }
 
-  // Getters para acceder a los controles de forma segura
+  // Getters para acceder a los controles
   get noteTypeControl(): FormControl {
     return this.noteForm.get('type') as FormControl;
   }
@@ -221,11 +241,9 @@ export class ContactFormComponent implements OnInit, OnChanges {
     return this.contactForm.get('notes') as FormArray;
   }
 
-  // Toggle para mostrar/ocultar campos de recordatorio
   toggleReminderFields() {
     this.showReminderFields = this.enableReminderControl.value;
     
-    // Si se desactiva el recordatorio, limpiar los campos
     if (!this.showReminderFields) {
       this.reminderDateControl.reset();
       this.reminderTimeControl.reset();
@@ -260,7 +278,6 @@ export class ContactFormComponent implements OnInit, OnChanges {
     this.notes.removeAt(index);
   }
 
-  // Método público para usar en el template
   combineDateTimePublic(date: string, time: string): Date {
     if (!date || !time) return new Date();
     
@@ -289,7 +306,6 @@ export class ContactFormComponent implements OnInit, OnChanges {
     const noteId = Date.now().toString();
     let reminderDateTime = '';
 
-    // Solo programar recordatorio si está activado y tiene fecha/hora
     const shouldSetReminder = noteValue.enableReminder && 
                              noteValue.reminderDate && 
                              noteValue.reminderTime;
@@ -346,7 +362,6 @@ export class ContactFormComponent implements OnInit, OnChanges {
     });
     this.notes.push(noteGroup);
 
-    // Resetear formulario de nota
     this.noteForm.reset({
       type: 'note',
       text: '',
@@ -473,26 +488,42 @@ export class ContactFormComponent implements OnInit, OnChanges {
         lastInteraction: new Date().toISOString()
       } as Omit<Contact, 'id' | 'dateCreated'>;
 
-      let savedContact: Contact;
+      try {
+        let savedContact: Contact;
 
-      if (this.contact) {
-        this.contactService.updateContact(this.contact.id, contactData);
-        savedContact = { ...this.contact, ...contactData } as Contact;
-      } else {
-        savedContact = await this.contactService.addContact(contactData);
+        if (this.contact) {
+          // updateContact devuelve boolean
+          await this.contactService.updateContact(this.contact.id, contactData);
+          // Construir el contacto actualizado manualmente
+          savedContact = { 
+            ...this.contact, 
+            ...contactData 
+          } as Contact;
+        } else {
+          // addContact devuelve Contact
+          savedContact = await this.contactService.addContact(contactData);
+        }
 
+        const toast = await this.toastController.create({
+          message: this.contact ? 'Contacto actualizado exitosamente' : 'Contacto creado exitosamente',
+          duration: 2000,
+          color: 'success',
+          position: 'top'
+        });
+        toast.present();
+
+        this.contactSaved.emit(savedContact);
+        this.closeForm();
+      } catch (error) {
+        console.error('Error al guardar contacto:', error);
+        const toast = await this.toastController.create({
+          message: 'Error al guardar el contacto. Por favor intenta nuevamente.',
+          duration: 3000,
+          color: 'danger',
+          position: 'top'
+        });
+        toast.present();
       }
-
-      const toast = await this.toastController.create({
-        message: this.contact ? 'Contacto actualizado exitosamente' : 'Contacto creado exitosamente',
-        duration: 2000,
-        color: 'success',
-        position: 'top'
-      });
-      toast.present();
-
-      this.contactSaved.emit(savedContact);
-      this.closeForm();
     } else {
       const toast = await this.toastController.create({
         message: 'Por favor completa todos los campos requeridos',

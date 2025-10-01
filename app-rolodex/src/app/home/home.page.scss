@@ -322,3 +322,29 @@ ion-label, ion-text, ion-item, ion-note, p, span, div {
   -moz-user-select: text !important;
   -ms-user-select: text !important;
 }
+
+// Agregar estas reglas al archivo home.page.scss existente
+
+// Hacer que las tarjetas sean clickeables
+.contact-card {
+  cursor: pointer;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  }
+
+  &:active {
+    transform: translateY(0);
+  }
+}
+
+// Hint para hacer clic
+.click-hint {
+  font-size: 12px;
+  color: var(--ion-color-medium);
+  font-style: italic;
+  margin-top: 8px;
+  text-align: center;
+} 

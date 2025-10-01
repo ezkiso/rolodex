@@ -35,3 +35,16 @@
 /* @import "@ionic/angular/css/palettes/dark.always.css"; */
 /* @import "@ionic/angular/css/palettes/dark.class.css"; */
 @import '@ionic/angular/css/palettes/dark.system.css';
+// Agregar esto al archivo src/global.scss
+
+// Estilos para el modal de detalle de contacto
+.contact-detail-modal {
+  --width: 95%;
+  --height: 95%;
+  --border-radius: 16px;
+  
+  @media (min-width: 768px) {
+    --width: 700px;
+    --height: 90%;
+  }
+}

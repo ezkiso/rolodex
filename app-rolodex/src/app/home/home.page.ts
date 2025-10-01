@@ -2,6 +2,7 @@ import { SocialLinksComponent } from '../components/social-links/social-links.co
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { ContactDetailComponent } from '../components/contact-detail/contact-detail.component';
 import { 
   IonContent, 
   IonHeader, 
@@ -157,6 +158,20 @@ export class HomePage implements OnInit {
       default: return 'Sin definir';
     }
   }
+
+    // Función para abrir el detalle del contacto en modal
+  async openContactDetail(contact: Contact) {
+    const modal = await this.modalController.create({
+      component: ContactDetailComponent,
+      componentProps: {
+        contact: contact
+      },
+      cssClass: 'contact-detail-modal'
+    });
+
+    await modal.present();
+  }
+
 
   // Función para alternar el formulario flotante (nuevo contacto)
   toggleForm() {
