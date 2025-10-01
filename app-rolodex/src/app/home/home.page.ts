@@ -125,7 +125,7 @@ export class HomePage implements OnInit {
   }
 
   // Función para buscar contactos
-  onSearchChange(event: any) {
+  async onSearchChange(event: any) {
     this.searchTerm = event.detail.value;
     if (this.searchTerm.trim() === '') {
       // Si no hay término de búsqueda, mostrar todos los contactos
@@ -134,7 +134,7 @@ export class HomePage implements OnInit {
       });
     } else {
       // Filtrar contactos basado en el término de búsqueda
-      this.filteredContacts = this.contactService.searchContacts(this.searchTerm);
+      this.filteredContacts = await this.contactService.searchContacts(this.searchTerm);
     }
   }
 
@@ -185,7 +185,7 @@ export class HomePage implements OnInit {
           text: 'Eliminar',
           cssClass: 'danger',
           handler: async () => {
-            const success = this.contactService.deleteContact(contact.id);
+            const success = await this.contactService.deleteContact(contact.id);
             if (success) {
               const toast = await this.toastController.create({
                 message: `${contact.name} ha sido eliminado`,

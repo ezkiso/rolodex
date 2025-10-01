@@ -1,14 +1,10 @@
 import { Injectable } from '@angular/core';
-import { Contacts, ContactPayload, PermissionStatus } from '@capacitor-community/contacts';
+import { Contacts } from '@capacitor-community/contacts';
 import { Contact, ContactLink } from '../models/contact.model';
 import { ContactService } from './contact.service';
 import { ToastController, AlertController, LoadingController } from '@ionic/angular/standalone';
 import { firstValueFrom } from 'rxjs';
 
-/**
- * Interfaz para mapear los contactos del dispositivo
- * sin extender ContactPayload directamente (para evitar errores de tipo)
- */
 interface DeviceContactMapped {
   name?: { display?: string };
   emails?: { type?: string; address: string }[];
@@ -21,6 +17,7 @@ interface DeviceContactMapped {
   providedIn: 'root'
 })
 export class ContactsSyncService {
+  private isSyncing = false;
 
   constructor(
     private contactService: ContactService,
@@ -51,10 +48,24 @@ export class ContactsSyncService {
     }
   }
 
-  /** Sincronizar todos los contactos */
+  /** Sincronizar todos los contactos - VERSIÓN OPTIMIZADA */
   async syncAllContacts(): Promise<void> {
+    if (this.isSyncing) {
+      const toast = await this.toastController.create({
+        message: 'La sincronización ya está en proceso',
+        duration: 2000,
+        color: 'warning',
+        position: 'top'
+      });
+      await toast.present();
+      return;
+    }
+
+    this.isSyncing = true;
     const hasPermission = await this.checkContactsPermission() || await this.requestContactsPermission();
+    
     if (!hasPermission) {
+      this.isSyncing = false;
       const toast = await this.toastController.create({
         message: 'Se necesitan permisos de contactos para la sincronización',
         duration: 3000,
@@ -72,22 +83,58 @@ export class ContactsSyncService {
     await loading.present();
 
     try {
+      // 1. Obtener contactos del dispositivo
       const { contacts: deviceContacts } = await Contacts.getContacts({
         projection: { name: true, phones: true, emails: true, organization: true, urls: true }
       });
 
+      // 2. Obtener contactos actuales de la base de datos
       const currentContacts = await firstValueFrom(this.contactService.getContacts());
 
+      // 3. Procesamiento por lotes para mejor rendimiento
+      const batchSize = 50;
       let syncedCount = 0;
       let updatedCount = 0;
+      let currentBatch: Contact[] = [];
 
-      for (const deviceContact of deviceContacts as DeviceContactMapped[]) {
-        const result = await this.importSingleContact(deviceContact, currentContacts);
-        if (result.created) syncedCount++;
-        if (result.updated) updatedCount++;
+      for (let i = 0; i < deviceContacts.length; i++) {
+        const deviceContact = deviceContacts[i] as DeviceContactMapped;
+        
+        if (!deviceContact.name?.display) continue;
+
+        const rolodexContact = this.convertDeviceContactToRolodex(deviceContact);
+        const existingContact = this.findExistingContact(rolodexContact, currentContacts);
+
+        if (existingContact) {
+          const updated = this.updateExistingContact(existingContact, rolodexContact);
+          if (updated) updatedCount++;
+        } else {
+          // Crear contacto con ID temporal (se asignará ID real al guardar)
+          const newContact: Contact = {
+            ...rolodexContact,
+            id: `temp-${Date.now()}-${i}`,
+            dateCreated: new Date().toISOString()
+          };
+          currentBatch.push(newContact);
+          syncedCount++;
+        }
+
+        // Guardar por lotes para mejorar rendimiento
+        if (currentBatch.length >= batchSize || i === deviceContacts.length - 1) {
+          if (currentBatch.length > 0) {
+            await this.contactService.addContactsBatch(currentBatch);
+            currentBatch = [];
+          }
+          
+          // Actualizar mensaje de carga periódicamente
+          if (i % 100 === 0) {
+            loading.message = `Procesando ${i + 1} de ${deviceContacts.length} contactos...`;
+          }
+        }
       }
 
       await loading.dismiss();
+      this.isSyncing = false;
 
       const toast = await this.toastController.create({
         message: `Sincronización completa: ${syncedCount} nuevos, ${updatedCount} actualizados`,
@@ -99,10 +146,12 @@ export class ContactsSyncService {
 
     } catch (error) {
       await loading.dismiss();
+      this.isSyncing = false;
       console.error('Error sincronizando contactos:', error);
+      
       const toast = await this.toastController.create({
-        message: 'Error al sincronizar contactos',
-        duration: 3000,
+        message: 'Error al sincronizar contactos: ' + (error instanceof Error ? error.message : 'Error desconocido'),
+        duration: 4000,
         color: 'danger',
         position: 'top'
       });
@@ -110,41 +159,34 @@ export class ContactsSyncService {
     }
   }
 
-  /** Importar un contacto individual */
-  private async importSingleContact(
-    deviceContact: DeviceContactMapped,
-    currentContacts: Contact[]
-  ): Promise<{ created: boolean; updated: boolean }> {
-    if (!deviceContact.name?.display) return { created: false, updated: false };
-
-    const rolodexContact = this.convertDeviceContactToRolodex(deviceContact);
-    const existingContact = this.findExistingContact(rolodexContact, currentContacts);
-
-    if (existingContact) {
-      const updated = this.updateExistingContact(existingContact, rolodexContact);
-      return { created: false, updated };
-    } else {
-      this.contactService.addContact(rolodexContact);
-      return { created: true, updated: false };
-    }
-  }
-
-  /** Convertir contacto del dispositivo a formato Rolodex */
+  /** Convertir contacto del dispositivo a formato Rolodex - OPTIMIZADO */
   private convertDeviceContactToRolodex(deviceContact: DeviceContactMapped): Omit<Contact, 'id' | 'dateCreated'> {
     const links: ContactLink[] = [];
 
-    deviceContact.emails?.forEach(email => {
-      if (email.address) links.push({ type: 'email', value: email.address, label: 'Email' });
-    });
+    // Procesar emails
+    if (deviceContact.emails) {
+      for (const email of deviceContact.emails) {
+        if (email.address) {
+          links.push({ type: 'email', value: email.address, label: 'Email' });
+        }
+      }
+    }
 
-    deviceContact.phones?.forEach(phone => {
-      const phoneType = phone.type || 'mobile';
-      links.push({ type: 'phone', value: phone.number, label: 'Teléfono' });
-    });
+    // Procesar teléfonos
+    if (deviceContact.phones) {
+      for (const phone of deviceContact.phones) {
+        links.push({ type: 'phone', value: phone.number, label: 'Teléfono' });
+      }
+    }
 
-    deviceContact.urls?.forEach(url => {
-      if (url.url) links.push({ type: 'website', value: url.url, label: 'Website' });
-    });
+    // Procesar URLs
+    if (deviceContact.urls) {
+      for (const url of deviceContact.urls) {
+        if (url.url) {
+          links.push({ type: 'website', value: url.url, label: 'Website' });
+        }
+      }
+    }
 
     return {
       name: deviceContact.name?.display || 'Contacto sin nombre',
@@ -165,32 +207,69 @@ export class ContactsSyncService {
     };
   }
 
-  /** Buscar contacto existente por nombre o email */
+  /** Buscar contacto existente por nombre o email - OPTIMIZADO Y CORREGIDO */
   private findExistingContact(
     newContact: Omit<Contact, 'id' | 'dateCreated'>,
     currentContacts: Contact[]
   ): Contact | undefined {
-    return currentContacts.find(contact =>
-      contact.name.toLowerCase() === newContact.name.toLowerCase() ||
-      (newContact.email && contact.email === newContact.email)
-    );
+    const nameToFind = newContact.name.toLowerCase();
+    
+    for (const contact of currentContacts) {
+      // Comparar por nombre (siempre existe)
+      if (contact.name.toLowerCase() === nameToFind) {
+        return contact;
+      }
+      
+      // Comparar por email (solo si ambos tienen email)
+      if (newContact.email && contact.email && 
+          contact.email.toLowerCase() === newContact.email.toLowerCase()) {
+        return contact;
+      }
+    }
+    
+    return undefined;
   }
 
-  /** Actualizar contacto existente */
+  /** Actualizar contacto existente - OPTIMIZADO Y CORREGIDO */
   private updateExistingContact(existingContact: Contact, newContact: Omit<Contact, 'id' | 'dateCreated'>): boolean {
     let hasUpdates = false;
     const updates: Partial<Contact> = {};
 
-    if (!existingContact.company && newContact.company) { updates.company = newContact.company; hasUpdates = true; }
-    if (!existingContact.position && newContact.position) { updates.position = newContact.position; hasUpdates = true; }
-    if (!existingContact.email && newContact.email) { updates.email = newContact.email; hasUpdates = true; }
-    if (!existingContact.phone && newContact.phone) { updates.phone = newContact.phone; hasUpdates = true; }
+    if (!existingContact.company && newContact.company) {
+      updates.company = newContact.company;
+      hasUpdates = true;
+    }
+    
+    if (!existingContact.position && newContact.position) {
+      updates.position = newContact.position;
+      hasUpdates = true;
+    }
+    
+    if (!existingContact.email && newContact.email) {
+      updates.email = newContact.email;
+      hasUpdates = true;
+    }
+    
+    if (!existingContact.phone && newContact.phone) {
+      updates.phone = newContact.phone;
+      hasUpdates = true;
+    }
 
-    const existingValues = existingContact.links.map(l => l.value.toLowerCase());
-    const newLinks = newContact.links.filter(l => !existingValues.includes(l.value.toLowerCase()));
-    if (newLinks.length) { updates.links = [...existingContact.links, ...newLinks]; hasUpdates = true; }
+    // Verificar enlaces nuevos
+    if (newContact.links.length > 0) {
+      const existingValues = new Set(existingContact.links.map(l => l.value.toLowerCase()));
+      const newLinks = newContact.links.filter(l => !existingValues.has(l.value.toLowerCase()));
+      
+      if (newLinks.length > 0) {
+        updates.links = [...existingContact.links, ...newLinks];
+        hasUpdates = true;
+      }
+    }
 
-    if (hasUpdates) this.contactService.updateContact(existingContact.id, updates);
+    if (hasUpdates) {
+      this.contactService.updateContact(existingContact.id, updates);
+    }
+    
     return hasUpdates;
   }
 

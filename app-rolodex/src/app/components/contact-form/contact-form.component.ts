@@ -479,7 +479,8 @@ export class ContactFormComponent implements OnInit, OnChanges {
         this.contactService.updateContact(this.contact.id, contactData);
         savedContact = { ...this.contact, ...contactData } as Contact;
       } else {
-        savedContact = this.contactService.addContact(contactData);
+        savedContact = await this.contactService.addContact(contactData);
+
       }
 
       const toast = await this.toastController.create({

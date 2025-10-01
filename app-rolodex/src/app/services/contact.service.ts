@@ -1,36 +1,91 @@
+// src/app/services/contact.service.ts
 import { Injectable } from '@angular/core';
 import { BehaviorSubject, Observable } from 'rxjs';
-import { Contact, ContactNote } from '../models/contact.model';
+import { Contact } from '../models/contact.model';
+import { DatabaseService } from './database.service';
 
 @Injectable({
   providedIn: 'root'
 })
 export class ContactService {
-  private contacts: Contact[] = [];
   private contactsSubject = new BehaviorSubject<Contact[]>([]);
   public contacts$ = this.contactsSubject.asObservable();
 
-  constructor() {
-    this.loadContacts();
+  constructor(private db: DatabaseService) {
+    this.initializeContacts();
   }
 
-  // Cargar contactos del localStorage
-  private loadContacts(): void {
+  // Inicializar contactos (con migración desde localStorage si es necesario)
+  private async initializeContacts(): Promise<void> {
+    try {
+      // Primero intentar cargar desde IndexedDB
+      const contacts = await this.db.getAllContacts();
+      
+      if (contacts.length > 0) {
+        this.contactsSubject.next(contacts);
+      } else {
+        // Si no hay contactos en IndexedDB, verificar localStorage y migrar
+        await this.migrateFromLocalStorage();
+      }
+    } catch (error) {
+      console.error('Error inicializando contactos desde IndexedDB:', error);
+      // Fallback a localStorage
+      this.loadFromLocalStorage();
+    }
+  }
+
+  // Migrar contactos desde localStorage a IndexedDB
+  private async migrateFromLocalStorage(): Promise<void> {
     const savedContacts = localStorage.getItem('rolodex_contacts');
     if (savedContacts) {
-      this.contacts = JSON.parse(savedContacts);
-    } else {
-      // Crear algunos contactos de ejemplo para empezar
-      this.contacts = this.createSampleContacts();
-      this.saveContacts();
+      try {
+        const contacts: Contact[] = JSON.parse(savedContacts);
+        if (contacts.length > 0) {
+          // Guardar en IndexedDB
+          await this.db.addContactsBatch(contacts);
+          this.contactsSubject.next(contacts);
+          console.log(`Migrados ${contacts.length} contactos desde localStorage a IndexedDB`);
+          return;
+        }
+      } catch (error) {
+        console.error('Error migrando contactos desde localStorage:', error);
+      }
     }
-    this.contactsSubject.next([...this.contacts]);
+    
+    // Si no hay contactos en localStorage, crear ejemplos
+    const sampleContacts = this.createSampleContacts();
+    await this.db.addContactsBatch(sampleContacts);
+    this.contactsSubject.next(sampleContacts);
   }
 
-  // Guardar contactos en localStorage
-  private saveContacts(): void {
-    localStorage.setItem('rolodex_contacts', JSON.stringify(this.contacts));
-    this.contactsSubject.next([...this.contacts]);
+  // Cargar contactos desde localStorage (fallback)
+  private loadFromLocalStorage(): void {
+    const savedContacts = localStorage.getItem('rolodex_contacts');
+    if (savedContacts) {
+      try {
+        this.contactsSubject.next(JSON.parse(savedContacts));
+      } catch (error) {
+        console.error('Error cargando desde localStorage:', error);
+        this.contactsSubject.next(this.createSampleContacts());
+      }
+    } else {
+      this.contactsSubject.next(this.createSampleContacts());
+    }
+  }
+
+  // Actualizar ambos almacenamientos (IndexedDB y localStorage como backup)
+  private async updateStorages(contacts: Contact[]): Promise<void> {
+    try {
+      // Actualizar IndexedDB
+      await this.db.clearContacts();
+      await this.db.addContactsBatch(contacts);
+    } catch (error) {
+      console.error('Error actualizando IndexedDB:', error);
+    }
+    
+    // Siempre mantener localStorage como backup
+    localStorage.setItem('rolodex_contacts', JSON.stringify(contacts));
+    this.contactsSubject.next([...contacts]);
   }
 
   // Obtener todos los contactos
@@ -39,62 +94,108 @@ export class ContactService {
   }
 
   // Obtener un contacto por ID
-  getContactById(id: string): Contact | undefined {
-    return this.contacts.find(contact => contact.id === id);
+  async getContactById(id: string): Promise<Contact | undefined> {
+    try {
+      return await this.db.getContact(id);
+    } catch (error) {
+      console.error('Error obteniendo contacto por ID desde IndexedDB:', error);
+      // Fallback a memoria
+      const contacts = this.contactsSubject.value;
+      return contacts.find(contact => contact.id === id);
+    }
   }
 
   // Agregar nuevo contacto
-  addContact(contact: Omit<Contact, 'id' | 'dateCreated'>): Contact {
+  async addContact(contactData: Omit<Contact, 'id' | 'dateCreated'>): Promise<Contact> {
     const newContact: Contact = {
-      ...contact,
+      ...contactData,
       id: this.generateId(),
       dateCreated: new Date().toISOString()
     };
     
-    this.contacts.unshift(newContact); // Agregar al inicio
-    this.saveContacts();
+    const currentContacts = this.contactsSubject.value;
+    const updatedContacts = [newContact, ...currentContacts];
+    
+    await this.updateStorages(updatedContacts);
     return newContact;
   }
 
   // Actualizar contacto existente
-  updateContact(id: string, updatedContact: Partial<Contact>): boolean {
-    const index = this.contacts.findIndex(contact => contact.id === id);
+  async updateContact(id: string, updatedContact: Partial<Contact>): Promise<boolean> {
+    const currentContacts = this.contactsSubject.value;
+    const index = currentContacts.findIndex(contact => contact.id === id);
+    
     if (index !== -1) {
-      this.contacts[index] = { 
-        ...this.contacts[index], 
+      const updatedContacts = [...currentContacts];
+      updatedContacts[index] = { 
+        ...updatedContacts[index], 
         ...updatedContact,
         lastInteraction: new Date().toISOString()
       };
-      this.saveContacts();
+      
+      await this.updateStorages(updatedContacts);
       return true;
     }
+    
     return false;
   }
 
   // Eliminar contacto
-  deleteContact(id: string): boolean {
-    const index = this.contacts.findIndex(contact => contact.id === id);
-    if (index !== -1) {
-      this.contacts.splice(index, 1);
-      this.saveContacts();
+  async deleteContact(id: string): Promise<boolean> {
+    const currentContacts = this.contactsSubject.value;
+    const updatedContacts = currentContacts.filter(contact => contact.id !== id);
+    
+    if (updatedContacts.length < currentContacts.length) {
+      await this.updateStorages(updatedContacts);
       return true;
     }
+    
     return false;
   }
 
+  // Agregar múltiples contactos (para sincronización) - IMPLEMENTACIÓN REQUERIDA
+  async addContactsBatch(contacts: Contact[]): Promise<void> {
+    const currentContacts = this.contactsSubject.value;
+    const updatedContacts = [...contacts, ...currentContacts];
+    await this.updateStorages(updatedContacts);
+  }
+
+  // Sincronizar contactos (reemplazar todos)
+  async syncContacts(contacts: Contact[]): Promise<void> {
+    await this.updateStorages(contacts);
+  }
+
   // Buscar contactos
-  searchContacts(query: string): Contact[] {
-    if (!query.trim()) {
-      return this.contacts;
+  async searchContacts(query: string): Promise<Contact[]> {
+    try {
+      return await this.db.searchContacts(query);
+    } catch (error) {
+      console.error('Error buscando en IndexedDB, usando búsqueda en memoria:', error);
+      
+      // Fallback a búsqueda en memoria
+      const searchTerm = query.toLowerCase();
+      const contacts = this.contactsSubject.value;
+      
+      return contacts.filter(contact =>
+        contact.name.toLowerCase().includes(searchTerm) ||
+        (contact.company && contact.company.toLowerCase().includes(searchTerm)) ||
+        (contact.email && contact.email.toLowerCase().includes(searchTerm)) ||
+        (contact.phone && contact.phone.toLowerCase().includes(searchTerm)) ||
+        contact.tags.some(tag => tag.toLowerCase().includes(searchTerm))
+      );
+    }
+  }
+
+  // Eliminar todos los contactos
+  async deleteAllContacts(): Promise<void> {
+    try {
+      await this.db.clearContacts();
+    } catch (error) {
+      console.error('Error limpiando IndexedDB:', error);
     }
     
-    const searchTerm = query.toLowerCase();
-    return this.contacts.filter(contact =>
-      contact.name.toLowerCase().includes(searchTerm) ||
-      contact.company?.toLowerCase().includes(searchTerm) ||
-      contact.email?.toLowerCase().includes(searchTerm) ||
-      contact.tags.some(tag => tag.toLowerCase().includes(searchTerm))
-    );
+    localStorage.removeItem('rolodex_contacts');
+    this.contactsSubject.next([]);
   }
 
   // Generar ID único
