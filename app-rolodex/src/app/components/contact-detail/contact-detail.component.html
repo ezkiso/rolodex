@@ -1,0 +1,190 @@
+<!-- src/app/components/contact-detail/contact-detail.component.html -->
+<ion-header>
+  <ion-toolbar>
+    <ion-title>Detalle del Contacto</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="closeModal()">
+        <ion-icon name="close"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content class="contact-detail-content" *ngIf="contact">
+  <!-- Cabecera del contacto -->
+  <div class="detail-header">
+    <div class="avatar-large">
+      {{ getInitials(contact.name) }}
+    </div>
+    <h1>{{ contact.name }}</h1>
+    <p class="position" *ngIf="contact.position || contact.company">
+      <span *ngIf="contact.position">{{ contact.position }}</span>
+      <span *ngIf="contact.position && contact.company"> en </span>
+      <span *ngIf="contact.company">{{ contact.company }}</span>
+    </p>
+    <ion-chip [color]="getPriorityColor(contact.priority)" class="priority-chip-large">
+      {{ getPriorityText(contact.priority) }}
+    </ion-chip>
+  </div>
+
+  <!-- Información de contacto -->
+  <ion-card class="info-card">
+    <ion-card-header>
+      <ion-card-title>
+        <ion-icon name="call"></ion-icon>
+        Información de Contacto
+      </ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <ion-list lines="none">
+        <ion-item *ngIf="contact.email">
+          <ion-icon name="mail" slot="start" color="primary"></ion-icon>
+          <ion-label>
+            <p class="label-small">Email</p>
+            <h3>{{ contact.email }}</h3>
+          </ion-label>
+        </ion-item>
+
+        <ion-item *ngIf="contact.phone">
+          <ion-icon name="call" slot="start" color="primary"></ion-icon>
+          <ion-label>
+            <p class="label-small">Teléfono</p>
+            <h3>{{ contact.phone }}</h3>
+          </ion-label>
+        </ion-item>
+
+        <ion-item *ngIf="contact.company">
+          <ion-icon name="business" slot="start" color="primary"></ion-icon>
+          <ion-label>
+            <p class="label-small">Empresa</p>
+            <h3>{{ contact.company }}</h3>
+          </ion-label>
+        </ion-item>
+
+        <ion-item *ngIf="contact.position">
+          <ion-icon name="person" slot="start" color="primary"></ion-icon>
+          <ion-label>
+            <p class="label-small">Cargo</p>
+            <h3>{{ contact.position }}</h3>
+          </ion-label>
+        </ion-item>
+      </ion-list>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Enlaces adicionales -->
+  <ion-card class="info-card" *ngIf="contact.links && contact.links.length > 0">
+    <ion-card-header>
+      <ion-card-title>
+        <ion-icon name="globe"></ion-icon>
+        Enlaces Adicionales
+      </ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <app-social-links [links]="contact.links"></app-social-links>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Tags -->
+  <ion-card class="info-card" *ngIf="contact.tags && contact.tags.length > 0">
+    <ion-card-header>
+      <ion-card-title>
+        <ion-icon name="pricetags"></ion-icon>
+        Etiquetas
+      </ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <div class="tags-container">
+        <ion-chip *ngFor="let tag of contact.tags" color="primary" outline="true">
+          {{ tag }}
+        </ion-chip>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Notas y Reuniones -->
+  <ion-card class="info-card" *ngIf="contact.notes && contact.notes.length > 0">
+    <ion-card-header>
+      <ion-card-title>
+        <ion-icon name="chatbubble-outline"></ion-icon>
+        Notas y Reuniones
+        <ion-badge color="primary">{{ contact.notes.length }}</ion-badge>
+      </ion-card-title>
+    </ion-card-header>
+    <ion-card-content>
+      <div class="notes-list">
+        <div 
+          *ngFor="let note of contact.notes; let i = index" 
+          class="note-item"
+          [class.note-meeting]="note.type === 'meeting'"
+          [class.note-with-reminder]="hasReminder(note)">
+          
+          <div class="note-header">
+            <div class="note-type">
+              <ion-icon [name]="getNoteIcon(note.type)"></ion-icon>
+              <span class="note-type-label">{{ getNoteTypeLabel(note.type) }}</span>
+              <ion-badge 
+                *ngIf="hasReminder(note) && isUpcomingReminder(note.reminderDate!)" 
+                color="warning">
+                <ion-icon name="alarm-outline"></ion-icon>
+                Recordatorio activo
+              </ion-badge>
+              <ion-badge 
+                *ngIf="hasReminder(note) && !isUpcomingReminder(note.reminderDate!)" 
+                color="medium">
+                <ion-icon name="checkmark-circle"></ion-icon>
+                Recordatorio pasado
+              </ion-badge>
+            </div>
+            <span class="note-date">{{ formatDate(note.date || note.created) }}</span>
+          </div>
+
+          <div class="note-content">
+            <p>{{ note.text }}</p>
+          </div>
+
+          <div class="note-reminder" *ngIf="hasReminder(note) && note.reminderDate">
+            <ion-icon name="alarm-outline" color="warning"></ion-icon>
+            <span>{{ formatDateTime(note.reminderDate) }}</span>
+          </div>
+        </div>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Información de fechas -->
+  <ion-card class="info-card metadata-card">
+    <ion-card-content>
+      <div class="metadata">
+        <div class="metadata-item">
+          <ion-icon name="calendar" color="medium"></ion-icon>
+          <div>
+            <p class="label-small">Creado</p>
+            <p class="value-small">{{ formatDate(contact.dateCreated) }}</p>
+          </div>
+        </div>
+        <div class="metadata-item">
+          <ion-icon name="time" color="medium"></ion-icon>
+          <div>
+            <p class="label-small">Última interacción</p>
+            <p class="value-small">{{ formatDate(contact.lastInteraction) }}</p>
+          </div>
+        </div>
+      </div>
+    </ion-card-content>
+  </ion-card>
+
+  <!-- Mensaje si no hay notas -->
+  <ion-card class="info-card" *ngIf="!contact.notes || contact.notes.length === 0">
+    <ion-card-content class="empty-state">
+      <ion-icon name="chatbubble-outline" size="large" color="medium"></ion-icon>
+      <p>No hay notas o reuniones registradas para este contacto</p>
+    </ion-card-content>
+  </ion-card>
+</ion-content>
+
+<!-- Mensaje de error si no hay contacto -->
+<ion-content *ngIf="!contact" class="ion-padding ion-text-center">
+  <p>No se pudo cargar la información del contacto</p>
+  <ion-button (click)="closeModal()">Cerrar</ion-button>
+</ion-content>

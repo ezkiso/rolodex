@@ -33,6 +33,15 @@
     </div>
 
     <ion-card *ngFor="let contact of filteredContacts" class="contact-card" (click)="openContactDetail(contact)">
+      <ion-button 
+        fill="clear" 
+        size="small" 
+        color="primary"
+        (click)="showExportOptions(contact, $event)"
+        title="Compartir contacto"
+        class="share-button">
+        <ion-icon name="share-social-outline" slot="icon-only"></ion-icon>
+      </ion-button>
       <ion-card-header>
         <div class="contact-header">
           <div class="contact-avatar">
@@ -75,15 +84,6 @@
                 <ion-icon name="trash-outline" slot="icon-only"></ion-icon>
               </ion-button>
                  <!-- Botón de compartir en esquina superior derecha -->
-              <ion-button 
-                  fill="clear" 
-                  size="small" 
-                  color="primary"
-                  (click)="showExportOptions(contact, $event)"
-                  title="Compartir contacto"
-                  class="share-button">
-                  <ion-icon name="download" slot="icon-only"></ion-icon>
-              </ion-button>
             </div>
           </div>
         </div>
@@ -124,20 +124,15 @@
         </div>
 
         <!-- Notas resumidas -->
-        <div class="notes-preview" *ngIf="contact.notes.length > 0">
-          <p><strong>Última nota:</strong> {{ contact.notes[0].text | slice:0:100 }}
-            <span *ngIf="contact.notes[0].text.length > 100">...</span>
-          </p>
-        </div>
+          <div class="notes-preview" *ngIf="contact.notes.length > 0">
+            <p><strong>Última nota:</strong> {{ contact.notes[0].text | slice:0:100 }}
+              <span *ngIf="contact.notes[0].text.length > 100">...</span>
+            </p>
+          </div>
       </ion-card-content>
     </ion-card>
   </div>
-  <div class="notes-preview" *ngIf="contact.notes.length > 0">
-    <p><strong>Última nota:</strong> {{ contact.notes[0].text | slice:0:100 }}
-      <span *ngIf="contact.notes[0].text.length > 100">...</span>
-    </p>
-    <p class="click-hint">👆 Toca para ver todas las notas</p>  <!-- ← NUEVO -->
-  </div>
+  
   <!-- Botón flotante para agregar contacto -->
   <ion-fab slot="fixed" vertical="top" horizontal="end" class="fab-container">
     <ion-fab-button 

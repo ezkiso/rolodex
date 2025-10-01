@@ -180,13 +180,19 @@ export class HomePage implements OnInit {
   }
 
   // Función para editar contacto
-  editContact(contact: Contact) {
+  editContact(contact: Contact, event: Event) {
+    if(event){
+    event.stopPropagation();
+    } // Evitar que el clic se propague al card
     this.selectedContact = contact;
     this.showForm = true;
   }
 
   // Función para eliminar contacto
-  async deleteContact(contact: Contact) {
+  async deleteContact(contact: Contact, event: Event) {
+    if (event){
+    event.stopPropagation(); // Evitar que el clic se propague al card
+    }
     const alert = await this.alertController.create({
       header: 'Confirmar eliminación',
       message: `¿Estás seguro de que quieres eliminar a ${contact.name}? Esta acción no se puede deshacer.`,
@@ -510,7 +516,10 @@ export class HomePage implements OnInit {
   }
 
   // Función para mostrar opciones de exportación
-  async showExportOptions(contact: Contact) {
+  async showExportOptions(contact: Contact, event: Event) {
+    if(event){
+    event.stopPropagation(); // Evitar que el clic se propague al card
+    }
     const alert = await this.alertController.create({
       header: 'Exportar Contacto',
       message: `¿Cómo quieres exportar a ${contact.name}?`,

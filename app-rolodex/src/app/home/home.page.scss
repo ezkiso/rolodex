@@ -13,18 +13,16 @@
   text-align: center;
   padding: 60px 20px;
   color: var(--ion-color-medium);
-  
+
   ion-icon {
     margin-bottom: 16px;
     color: var(--ion-color-medium);
   }
-  
   p {
     margin: 8px 0;
     font-size: 18px;
     font-weight: 500;
   }
-  
   .subtitle {
     font-size: 14px;
     font-weight: normal;
@@ -36,21 +34,52 @@
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
-  position: relative; // Para posicionar el botón de compartir
-  
+  position: relative; /* necesario para posicionar el botón de compartir */
+
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
   }
+
+  cursor: pointer;
+  &:active {
+    transform: translateY(0);
+  }
 }
 
-// Botón de compartir en esquina superior derecha
+/* Botón de compartir en esquina superior derecha de la tarjeta */
+.share-button {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  z-index: 20;
+
+  /* ajustes de estilo del botón */
+  --padding-start: 6px;
+  --padding-end: 6px;
+  --padding-top: 6px;
+  --padding-bottom: 6px;
+  --border-radius: 50%;
+  background: transparent; /* si quieres fondo transparente o color específico */
+  color: var(--ion-color-primary);
+
+  ion-icon {
+    font-size: 18px;
+  }
+  
+  &:hover {
+    /* puedes cambiar el color de fondo al pasar el mouse si quieres */
+    background: rgba(0,0,0,0.04);
+  }
+}
+
 .share-button-container {
+  /* si usas este contenedor envolviendo el boton, también puede estar aquí */
   position: absolute;
   top: 8px;
   right: 8px;
   z-index: 10;
-  
+
   .share-button {
     --padding-start: 8px;
     --padding-end: 8px;
@@ -61,22 +90,23 @@
     --color: white;
     width: 36px;
     height: 36px;
-    
+
     ion-icon {
       font-size: 18px;
     }
-    
+
     &:hover {
       --background: var(--ion-color-primary-shade);
     }
   }
 }
 
+/* Para dejar espacio en la cabecera de la tarjeta si el botón flota sobre ella */
 .contact-header {
   display: flex;
   align-items: flex-start;
   gap: 16px;
-  padding-right: 50px; // Espacio para el botón de compartir
+  padding-right: 50px; /* espacio para que el botón no tape contenido */
 }
 
 .contact-avatar {
@@ -88,7 +118,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  
+
   span {
     color: white;
     font-weight: bold;
@@ -99,12 +129,11 @@
 .contact-info {
   flex: 1;
   min-width: 0;
-  
+
   ion-card-title {
     font-size: 20px;
     margin-bottom: 4px;
   }
-  
   ion-card-subtitle {
     font-size: 14px;
     margin-bottom: 2px;
@@ -116,16 +145,15 @@
   flex-direction: column;
   align-items: flex-end;
   gap: 8px;
-  
+
   .priority-chip {
     font-size: 12px;
     height: 24px;
   }
-  
   .action-buttons {
     display: flex;
     gap: 4px;
-    
+
     .action-btn {
       --padding-start: 8px;
       --padding-end: 8px;
@@ -134,7 +162,7 @@
       --border-radius: 50%;
       width: 32px;
       height: 32px;
-      
+
       ion-icon {
         font-size: 16px;
       }
@@ -152,7 +180,7 @@
   gap: 8px;
   margin-bottom: 8px;
   font-size: 14px;
-  
+
   ion-icon {
     color: var(--ion-color-primary);
     font-size: 16px;
@@ -164,7 +192,7 @@
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
-  
+
   ion-chip {
     font-size: 12px;
     height: 28px;
@@ -175,7 +203,7 @@
   margin-top: 16px;
   padding-top: 12px;
   border-top: 1px solid var(--ion-color-light-shade);
-  
+
   small {
     color: var(--ion-color-medium);
     font-size: 12px;
@@ -188,7 +216,7 @@
   background: var(--ion-color-light);
   border-radius: 8px;
   border-left: 4px solid var(--ion-color-primary);
-  
+
   p {
     margin: 0;
     font-size: 14px;
@@ -196,14 +224,13 @@
   }
 }
 
-/* Estilos del botón flotante */
+/* Estilos del botón flotante (agregar contacto) */
 .fab-container {
   margin: 16px;
-  
   ion-fab-button {
     --box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
     transition: transform 0.3s ease;
-    
+
     &.rotated {
       transform: rotate(45deg);
     }
@@ -222,13 +249,13 @@
   transform: translateY(-20px) scale(0.95);
   transition: all 0.3s ease;
   pointer-events: none;
-  
+
   &.show {
     opacity: 1;
     transform: translateY(0) scale(1);
     pointer-events: all;
   }
-  
+
   ion-card {
     margin: 0;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
@@ -245,31 +272,26 @@
     right: 16px;
     width: auto;
   }
-  
   .contact-header {
     gap: 12px;
-    padding-right: 45px; // Ajustar para móvil
+    padding-right: 45px; /* ajustar espacio para botón en móvil */
   }
-  
   .contact-avatar {
     width: 40px;
     height: 40px;
-    
     span {
       font-size: 16px;
     }
   }
-  
   .contact-actions {
     .priority-chip {
       font-size: 10px;
       height: 20px;
     }
-    
     .action-buttons {
-      flex-direction: row; // Mantener horizontal en móvil
+      flex-direction: row;
       gap: 2px;
-      
+
       .action-btn {
         width: 28px;
         height: 28px;
@@ -277,31 +299,17 @@
         --padding-end: 4px;
         --padding-top: 4px;
         --padding-bottom: 4px;
-        
+
         ion-icon {
           font-size: 14px;
         }
       }
     }
   }
-  .email-text {
-  user-select: text !important;
-  -webkit-user-select: text !important;
-  -moz-user-select: text !important;
-  -ms-user-select: text !important;
-  cursor: text !important;
-  }
-
-  .phone-link {
-  color: var(--ion-color-primary);
-  text-decoration: underline;
-  }
-
-  
   .share-button-container {
     top: 6px;
     right: 6px;
-    
+
     .share-button {
       width: 32px;
       height: 32px;
@@ -309,42 +317,17 @@
       --padding-end: 6px;
       --padding-top: 6px;
       --padding-bottom: 6px;
-      
+
       ion-icon {
         font-size: 16px;
       }
     }
   }
 }
+
 ion-label, ion-text, ion-item, ion-note, p, span, div {
   user-select: text !important;
   -webkit-user-select: text !important;
   -moz-user-select: text !important;
   -ms-user-select: text !important;
 }
-
-// Agregar estas reglas al archivo home.page.scss existente
-
-// Hacer que las tarjetas sean clickeables
-.contact-card {
-  cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-
-  &:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-  }
-
-  &:active {
-    transform: translateY(0);
-  }
-}
-
-// Hint para hacer clic
-.click-hint {
-  font-size: 12px;
-  color: var(--ion-color-medium);
-  font-style: italic;
-  margin-top: 8px;
-  text-align: center;
-} 

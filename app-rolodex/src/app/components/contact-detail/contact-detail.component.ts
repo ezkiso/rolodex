@@ -12,7 +12,6 @@ import {
   IonCard,
   IonCardHeader,
   IonCardTitle,
-  IonCardSubtitle,
   IonCardContent,
   IonChip,
   IonItem,
@@ -58,7 +57,6 @@ import { SocialLinksComponent } from '../social-links/social-links.component';
     IonCard,
     IonCardHeader,
     IonCardTitle,
-    IonCardSubtitle,
     IonCardContent,
     IonChip,
     IonItem,
@@ -91,6 +89,7 @@ export class ContactDetailComponent implements OnInit {
   }
 
   ngOnInit() {
+    console.log('ContactDetailComponent - ngOnInit', this.contact);
     if (!this.contact) {
       console.error('No se proporcionó un contacto al componente de detalle');
       this.closeModal();
