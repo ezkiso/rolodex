@@ -49,8 +49,7 @@ import {
   logoLinkedin,
   logoFacebook,
   logoInstagram,
-  close
-} from 'ionicons/icons';
+  close, shareSocialOutline } from 'ionicons/icons';
 import { Observable } from 'rxjs';
 import { Contact } from '../models/contact.model';
 import { ContactService } from '../services/contact.service';
@@ -103,12 +102,7 @@ export class HomePage implements OnInit {
     private loadingController: LoadingController
   ) {
     // Registrar los iconos que vamos a usar
-    addIcons({
-      person, shareOutline, createOutline, trashOutline, mailOutline, 
-      callOutline, add, mail, call, business, search, star, starOutline, 
-      create, trash, download, share, globe, logoLinkedin, logoFacebook, 
-      logoInstagram, sync, phonePortrait, close
-    });
+    addIcons({person,createOutline,trashOutline,shareSocialOutline,mailOutline,callOutline,shareOutline,add,mail,call,business,search,star,starOutline,create,trash,download,share,globe,logoLinkedin,logoFacebook,logoInstagram,sync,phonePortrait,close});
     
     this.contacts$ = this.contactService.getContacts();
   }
