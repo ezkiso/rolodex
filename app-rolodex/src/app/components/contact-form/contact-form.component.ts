@@ -36,9 +36,11 @@ import {
   logoLinkedin,
   logoFacebook,
   logoInstagram,
-  closeCircle
+  closeCircle,
+  addCircle,
+  checkboxOutline
 } from 'ionicons/icons';
-import { Contact, ContactLink, ContactNote } from '../../models/contact.model';
+import { Contact, ContactLink, ContactNote, ChecklistItem } from '../../models/contact.model';
 import { ContactService } from '../../services/contact.service';
 
 @Component({
@@ -208,9 +210,13 @@ export class ContactFormComponent implements OnInit, OnChanges {
       text: ['', Validators.required],
       enableReminder: [false],
       reminderDate: [''],
-      reminderTime: ['']
+      reminderTime: [''],
+      checklistItems: [[]]
     });
   }
+
+  // Nuevo: estado para el input de checklist
+  newChecklistItem: string = '';
 
   // Getters para acceder a los controles
   get noteTypeControl(): FormControl {
@@ -233,6 +239,10 @@ export class ContactFormComponent implements OnInit, OnChanges {
     return this.noteForm.get('reminderTime') as FormControl;
   }
 
+  get checklistItemsControl(): FormControl {
+    return this.noteForm.get('checklistItems') as FormControl;
+  }
+
   get links() {
     return this.contactForm.get('links') as FormArray;
   }
@@ -248,6 +258,28 @@ export class ContactFormComponent implements OnInit, OnChanges {
       this.reminderDateControl.reset();
       this.reminderTimeControl.reset();
     }
+  }
+
+  addChecklistItem() {
+    const itemText = this.newChecklistItem.trim();
+    if (itemText) {
+      const currentItems = this.checklistItemsControl.value || [];
+      const newItem = {
+        id: Date.now().toString(),
+        text: itemText,
+        completed: false,
+        order: currentItems.length
+      };
+      this.checklistItemsControl.setValue([...currentItems, newItem]);
+      this.newChecklistItem = '';
+    }
+  }
+
+  removeChecklistItem(itemId: string) {
+    const currentItems = this.checklistItemsControl.value || [];
+    this.checklistItemsControl.setValue(
+      currentItems.filter((item: any) => item.id !== itemId)
+    );
   }
 
   addLink(existingLink?: ContactLink) {
@@ -303,6 +335,34 @@ export class ContactFormComponent implements OnInit, OnChanges {
     }
 
     const noteValue = this.noteForm.value;
+    
+    // Validar que para checklist haya items
+    if (noteValue.type === 'meeting-checklist' && (!noteValue.checklistItems || noteValue.checklistItems.length === 0)) {
+      const toast = await this.toastController.create({
+        message: 'Agrega al menos un item al checklist',
+        duration: 2000,
+        color: 'warning'
+      });
+      toast.present();
+      return;
+    }
+
+    // Procesar texto para meeting-bullets
+    let processedText = noteValue.text;
+    if (noteValue.type === 'meeting-bullets' && processedText) {
+      // Agregar guiones al inicio de cada línea si no los tiene
+      const lines = processedText.split('\n');
+      processedText = lines
+        .map((line: string) => {
+          const trimmed = line.trim();
+          if (trimmed && !trimmed.startsWith('-')) {
+            return '- ' + trimmed;
+          }
+          return trimmed;
+        })
+        .join('\n');
+    }
+
     const noteId = Date.now().toString();
     let reminderDateTime = '';
 
@@ -342,8 +402,8 @@ export class ContactFormComponent implements OnInit, OnChanges {
       }
     }
 
-    const newNote: ContactNote = {
-      text: noteValue.text,
+    const newNote: any = {
+      text: processedText,
       date: new Date().toISOString(),
       created: noteId,
       type: noteValue.type,
@@ -353,12 +413,18 @@ export class ContactFormComponent implements OnInit, OnChanges {
       reminderSet: shouldSetReminder
     };
 
+    // Agregar checklist si es del tipo checklist
+    if (noteValue.type === 'meeting-checklist') {
+      newNote.checklistItems = noteValue.checklistItems || [];
+    }
+
     const noteGroup = this.formBuilder.group({
       text: [newNote.text, Validators.required],
       type: [newNote.type, Validators.required],
       reminder: [newNote.reminder],
       reminderDate: [newNote.reminderDate],
-      reminderSet: [newNote.reminderSet]
+      reminderSet: [newNote.reminderSet],
+      checklistItems: [newNote.checklistItems || []]
     });
     this.notes.push(noteGroup);
 
@@ -367,8 +433,10 @@ export class ContactFormComponent implements OnInit, OnChanges {
       text: '',
       enableReminder: false,
       reminderDate: '',
-      reminderTime: ''
+      reminderTime: '',
+      checklistItems: []
     });
+    this.newChecklistItem = '';
     this.showReminderFields = false;
 
     const toast = await this.toastController.create({

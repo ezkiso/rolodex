@@ -403,3 +403,127 @@ ion-button[color="warning"] {
     font-weight: 600;
   }
 }
+// Estilos para el constructor de checklist
+.checklist-builder {
+  background: #f8f9fa;
+  border-radius: 8px;
+  padding: 16px;
+  margin: 16px 0;
+
+  .checklist-input-section {
+    margin-top: 12px;
+  }
+
+  .checklist-label {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ion-color-dark);
+    margin: 12px 0 8px 0;
+  }
+
+  .checklist-items-preview {
+    background: white;
+    border-radius: 8px;
+    padding: 12px;
+    margin-top: 12px;
+  }
+
+  .checklist-item-preview {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px;
+    background: #fff;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    margin-bottom: 8px;
+    transition: all 0.2s ease;
+
+    &:hover {
+      border-color: var(--ion-color-primary);
+      background: #f8f9ff;
+    }
+
+    ion-icon:first-child {
+      font-size: 20px;
+      color: var(--ion-color-primary);
+      flex-shrink: 0;
+    }
+
+    span {
+      flex: 1;
+      font-size: 14px;
+      color: var(--ion-color-dark);
+    }
+
+    ion-button {
+      --padding-start: 4px;
+      --padding-end: 4px;
+      margin: 0;
+    }
+  }
+
+  .no-items-small {
+    font-size: 13px;
+    color: var(--ion-color-medium);
+    text-align: center;
+    padding: 16px;
+    font-style: italic;
+  }
+}
+
+// Estilos para notas con viñetas
+.note-bullets {
+  .bullet-line {
+    margin: 4px 0;
+    padding-left: 8px;
+    font-size: 14px;
+    line-height: 1.6;
+    color: var(--ion-color-dark);
+  }
+}
+
+// Estilos para checklist en notas guardadas
+.checklist-title {
+  font-weight: 600;
+  font-size: 15px;
+  margin-bottom: 12px;
+  color: var(--ion-color-dark);
+}
+
+.checklist-items {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.checklist-item-readonly {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  background: rgba(var(--ion-color-primary-rgb), 0.05);
+  border-radius: 6px;
+  border-left: 3px solid var(--ion-color-primary);
+
+  ion-icon {
+    font-size: 18px;
+    color: var(--ion-color-primary);
+    flex-shrink: 0;
+  }
+
+  span {
+    font-size: 14px;
+    color: var(--ion-color-dark);
+    line-height: 1.4;
+  }
+}
+
+// Helper text
+.helper-text {
+  font-size: 11px;
+  color: var(--ion-color-medium);
+  font-style: italic;
+  font-weight: normal;
+}

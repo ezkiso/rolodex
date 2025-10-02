@@ -1,7 +1,15 @@
+export interface ChecklistItem {
+  id: string;
+  text: string;
+  completed: boolean;
+  order: number;
+}
+
 export interface ContactNote {
   text: string;
   date: string;
   created: string;
+  checklistItems?: ChecklistItem[];
   type: 'note' | 'meeting';
   reminder?: boolean;
   reminderDate?: string;       // Fecha y hora del recordatorio

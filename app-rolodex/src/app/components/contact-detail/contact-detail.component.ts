@@ -35,9 +35,11 @@ import {
   alarmOutline,
   checkmarkCircle,
   globe,
-  pricetags
+  pricetags,
+  checkbox,
+  squareOutline
 } from 'ionicons/icons';
-import { Contact } from '../../models/contact.model';
+import { Contact, ChecklistItem } from '../../models/contact.model';
 import { SocialLinksComponent } from '../social-links/social-links.component';
 
 @Component({
@@ -158,6 +160,8 @@ export class ContactDetailComponent implements OnInit {
   getNoteTypeLabel(type: string): string {
     switch (type) {
       case 'meeting': return 'Reunión';
+      case 'meeting-bullets': return 'Reunión (Viñetas)';
+      case 'meeting-checklist': return 'Reunión (Checklist)';
       case 'note': return 'Nota';
       default: return 'Información';
     }
@@ -169,5 +173,26 @@ export class ContactDetailComponent implements OnInit {
 
   isUpcomingReminder(reminderDate: string): boolean {
     return new Date(reminderDate) > new Date();
+  }
+
+  toggleChecklistItem(noteIndex: number, itemId: string) {
+    // Esta función permitirá marcar/desmarcar items del checklist
+    const note = this.contact.notes[noteIndex];
+    if (note.checklistItems) {
+      const item = note.checklistItems.find(i => i.id === itemId);
+      if (item) {
+        item.completed = !item.completed;
+      }
+    }
+  }
+
+  getChecklistProgress(checklistItems: any[]): { completed: number; total: number; percentage: number } {
+    if (!checklistItems || checklistItems.length === 0) {
+      return { completed: 0, total: 0, percentage: 0 };
+    }
+    const completed = checklistItems.filter(item => item.completed).length;
+    const total = checklistItems.length;
+    const percentage = Math.round((completed / total) * 100);
+    return { completed, total, percentage };
   }
 }

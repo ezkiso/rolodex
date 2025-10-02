@@ -154,6 +154,8 @@
         </p>
       </div>
 
+      <!-- Reemplaza la sección de Notas en tu contact-form.component.html con esto -->
+
       <!-- Notas con sistema de recordatorios -->
       <div class="form-section">
         <div class="section-header">
@@ -165,23 +167,83 @@
           <ion-item>
             <ion-label position="stacked">Tipo de Nota</ion-label>
             <ion-select [formControl]="noteTypeControl">
-              <ion-select-option value="note">Nota General</ion-select-option>
-              <ion-select-option value="meeting">Reunión</ion-select-option>
+              <ion-select-option value="note">📝 Nota General</ion-select-option>
+              <ion-select-option value="meeting">📅 Reunión</ion-select-option>
+              <ion-select-option value="meeting-bullets">📋 Reunión (Viñetas)</ion-select-option>
+              <ion-select-option value="meeting-checklist">✅ Reunión (Checklist)</ion-select-option>
             </ion-select>
           </ion-item>
 
-          <ion-item>
-            <ion-label position="stacked">Contenido *</ion-label>
+          <!-- Campo de texto para notas normales y con viñetas -->
+          <ion-item *ngIf="noteTypeControl.value !== 'meeting-checklist'">
+            <ion-label position="stacked">
+              Contenido * 
+              <span *ngIf="noteTypeControl.value === 'meeting-bullets'" class="helper-text">
+                (Las líneas se convertirán automáticamente en viñetas)
+              </span>
+            </ion-label>
             <ion-textarea 
               [formControl]="noteTextControl"
-              placeholder="Escribe tu nota aquí..."
+              [placeholder]="noteTypeControl.value === 'meeting-bullets' ? 'Escribe cada punto en una nueva línea...' : 'Escribe tu nota aquí...'"
               rows="3"
               auto-grow="true">
             </ion-textarea>
           </ion-item>
 
+          <!-- Checklist para reuniones tipo checklist -->
+          <div *ngIf="noteTypeControl.value === 'meeting-checklist'" class="checklist-builder">
+            <ion-item>
+              <ion-label position="stacked">Título del Checklist *</ion-label>
+              <ion-input 
+                [formControl]="noteTextControl"
+                placeholder="Ej: Objetivos de la reunión">
+              </ion-input>
+            </ion-item>
+
+            <div class="checklist-input-section">
+              <ion-item>
+                <ion-label position="stacked">Agregar item al checklist</ion-label>
+                <ion-input 
+                  [(ngModel)]="newChecklistItem"
+                  [ngModelOptions]="{standalone: true}"
+                  placeholder="Escribe un item y presiona +"
+                  (keyup.enter)="addChecklistItem()">
+                </ion-input>
+                <ion-button 
+                  slot="end" 
+                  fill="clear" 
+                  (click)="addChecklistItem()"
+                  [disabled]="!newChecklistItem.trim()">
+                  <ion-icon name="add-circle"></ion-icon>
+                </ion-button>
+              </ion-item>
+
+              <!-- Lista de items del checklist -->
+              <div class="checklist-items-preview" *ngIf="checklistItemsControl.value?.length > 0">
+                <p class="checklist-label">Items agregados:</p>
+                <div 
+                  *ngFor="let item of checklistItemsControl.value" 
+                  class="checklist-item-preview">
+                  <ion-icon name="checkbox-outline"></ion-icon>
+                  <span>{{ item.text }}</span>
+                  <ion-button 
+                    fill="clear" 
+                    size="small" 
+                    color="danger"
+                    (click)="removeChecklistItem(item.id)">
+                    <ion-icon name="close-circle"></ion-icon>
+                  </ion-button>
+                </div>
+              </div>
+
+              <p *ngIf="checklistItemsControl.value?.length === 0" class="no-items-small">
+                No hay items en el checklist. Agrega al menos uno.
+              </p>
+            </div>
+          </div>
+
           <!-- Toggle para activar recordatorio (solo para reuniones) -->
-          <ion-item *ngIf="noteTypeControl.value === 'meeting'">
+          <ion-item *ngIf="noteTypeControl.value === 'meeting' || noteTypeControl.value === 'meeting-bullets' || noteTypeControl.value === 'meeting-checklist'">
             <ion-toggle 
               [formControl]="enableReminderControl"
               (ionChange)="toggleReminderFields()"
@@ -191,7 +253,7 @@
           </ion-item>
 
           <!-- Campos para recordatorio (solo se muestran si está activado) -->
-          <div *ngIf="noteTypeControl.value === 'meeting' && showReminderFields">
+          <div *ngIf="(noteTypeControl.value === 'meeting' || noteTypeControl.value === 'meeting-bullets' || noteTypeControl.value === 'meeting-checklist') && showReminderFields">
             <ion-item>
               <ion-label position="stacked">Fecha del Recordatorio</ion-label>
               <ion-datetime 
@@ -224,7 +286,7 @@
           <ion-button 
             expand="block" 
             (click)="addNewNote()"
-            [disabled]="noteForm.invalid"
+            [disabled]="noteForm.invalid || (noteTypeControl.value === 'meeting-checklist' && checklistItemsControl.value?.length === 0)"
             color="secondary">
             <ion-icon name="add"></ion-icon>
             Agregar Nota
@@ -241,8 +303,35 @@
             
             <ion-item>
               <ion-label>
-                <h4>{{ noteControl.value.type === 'meeting' ? '📅 Reunión' : '📝 Nota' }}</h4>
-                <p>{{ noteControl.value.text }}</p>
+                <h4>
+                  <span *ngIf="noteControl.value.type === 'meeting'">📅 Reunión</span>
+                  <span *ngIf="noteControl.value.type === 'meeting-bullets'">📋 Reunión (Viñetas)</span>
+                  <span *ngIf="noteControl.value.type === 'meeting-checklist'">✅ Reunión (Checklist)</span>
+                  <span *ngIf="noteControl.value.type === 'note'">📝 Nota</span>
+                </h4>
+                
+                <!-- Mostrar texto con viñetas si es meeting-bullets -->
+                <div *ngIf="noteControl.value.type === 'meeting-bullets'" class="note-bullets">
+                  <p *ngFor="let line of noteControl.value.text.split('\n')" class="bullet-line">
+                    {{ line }}
+                  </p>
+                </div>
+                
+                <!-- Mostrar checklist si es meeting-checklist -->
+                <div *ngIf="noteControl.value.type === 'meeting-checklist'">
+                  <p class="checklist-title">{{ noteControl.value.text }}</p>
+                  <div class="checklist-items" *ngIf="noteControl.value.checklistItems">
+                    <div *ngFor="let item of noteControl.value.checklistItems" class="checklist-item-readonly">
+                      <ion-icon name="checkbox-outline"></ion-icon>
+                      <span>{{ item.text }}</span>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Texto normal para otros tipos -->
+                <p *ngIf="noteControl.value.type !== 'meeting-bullets' && noteControl.value.type !== 'meeting-checklist'">
+                  {{ noteControl.value.text }}
+                </p>
                 
                 <!-- Mostrar recordatorio si existe -->
                 <p *ngIf="isMeetingWithReminder(noteControl.value)" 
@@ -281,7 +370,6 @@
           No hay notas agregadas. Completa el formulario arriba y haz clic en "Agregar Nota".
         </p>
       </div>
-
       <!-- Botones de acción -->
       <div class="form-actions">
         <ion-button 

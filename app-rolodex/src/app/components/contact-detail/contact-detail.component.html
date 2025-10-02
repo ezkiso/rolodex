@@ -1,4 +1,13 @@
-<!-- src/app/components/contact-detail/contact-detail.component.html -->
+<div class="note-header">
+            <div class="note-type">
+              <ion-icon [name]="getNoteIcon(note.type)"></ion-icon>
+              <span class="note-type-label">{{ getNoteTypeLabel(note.type) }}</span>
+              
+              <!-- Badge de progreso para checklist -->
+              <ion-badge 
+                *ngIf="note.type === 'meeting-checklist' && note.checklistItems" 
+                [color]="getChecklistProgress(note.checklistItems).percentage === 100 ? 'success' : 'primary'">
+                {{ getChecklistProgress(note.checklistItems).<!-- src/app/components/contact-detail/contact-detail.component.html -->
 <ion-header>
   <ion-toolbar>
     <ion-title>Detalle del Contacto</ion-title>
@@ -123,6 +132,14 @@
             <div class="note-type">
               <ion-icon [name]="getNoteIcon(note.type)"></ion-icon>
               <span class="note-type-label">{{ getNoteTypeLabel(note.type) }}</span>
+              
+              <!-- Badge de progreso para checklist -->
+              <ion-badge 
+                *ngIf="note.type === 'meeting-checklist' && note.checklistItems" 
+                [color]="getChecklistProgress(note.checklistItems).percentage === 100 ? 'success' : 'primary'">
+                {{ getChecklistProgress(note.checklistItems).completed }}/{{ getChecklistProgress(note.checklistItems).total }}
+              </ion-badge>
+              
               <ion-badge 
                 *ngIf="hasReminder(note) && isUpcomingReminder(note.reminderDate!)" 
                 color="warning">
@@ -140,7 +157,35 @@
           </div>
 
           <div class="note-content">
-            <p>{{ note.text }}</p>
+            <!-- Texto con viñetas para meeting-bullets -->
+            <div *ngIf="note.type === 'meeting-bullets'" class="note-bullets">
+              <p *ngFor="let line of note.text.split('\n')" class="bullet-line">
+                {{ line }}
+              </p>
+            </div>
+
+            <!-- Checklist interactivo para meeting-checklist -->
+            <div *ngIf="note.type === 'meeting-checklist'">
+              <p class="checklist-title">{{ note.text }}</p>
+              <div class="checklist-items-interactive" *ngIf="note.checklistItems && note.checklistItems.length > 0">
+                <div 
+                  *ngFor="let item of note.checklistItems" 
+                  class="checklist-item-interactive"
+                  [class.completed]="item.completed"
+                  (click)="toggleChecklistItem(i, item.id)">
+                  <ion-icon 
+                    [name]="item.completed ? 'checkbox' : 'square-outline'"
+                    [color]="item.completed ? 'success' : 'medium'">
+                  </ion-icon>
+                  <span [class.strikethrough]="item.completed">{{ item.text }}</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Texto normal para otros tipos -->
+            <p *ngIf="note.type !== 'meeting-bullets' && note.type !== 'meeting-checklist'">
+              {{ note.text }}
+            </p>
           </div>
 
           <div class="note-reminder" *ngIf="hasReminder(note) && note.reminderDate">
